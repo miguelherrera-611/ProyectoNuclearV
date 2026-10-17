@@ -76,8 +76,20 @@ jobs:
 
       - name: Actualizar el código en el servidor (git pull + dependencias + migraciones)
         # secrets.APP_PATH apunta a la carpeta del BACKEND en el servidor
-        # (ej. ~/proyecto-nuclear/backend) — el repo clonado vive un nivel
-        # arriba de eso, por eso el "git pull" corre en el directorio padre.
+        # (ej. ~/repositories/ProyectoNuclearV/backend) — el repo clonado
+        # vive un nivel arriba de eso, por eso el "git pull" corre en el
+        # directorio padre.
+        #
+        # Dos cosas de hosting compartido confirmadas en el primer deploy
+        # real (ver backend/../Trampas... en la bóveda de notas):
+        # - proc_open está deshabilitado: "composer install" con sus scripts
+        #   por defecto (que corren "php artisan package:discover" como
+        #   subproceso) truena. Arreglo: --no-scripts, y correr
+        #   package:discover directo después (eso sí funciona, porque ahí no
+        #   hay un subproceso de por medio).
+        # - exec() también está deshabilitado: "php artisan storage:link"
+        #   depende de exec() internamente y truena. Arreglo: crear el
+        #   symlink a mano con "ln -s".
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -89,11 +101,14 @@ jobs:
             cd "${{ secrets.APP_PATH }}/.."
             git pull origin main
             cd "${{ secrets.APP_PATH }}"
-            composer install --no-interaction --no-dev --optimize-autoloader
+            composer install --no-interaction --no-dev --optimize-autoloader --no-scripts
+            php artisan package:discover --ansi
             php artisan migrate --force
             php artisan config:clear
+            rm -rf public/storage
+            ln -s "${{ secrets.APP_PATH }}/storage/app/public" public/storage
 
-      - name: Copiar el frontend construido al servidor
+      - name: Copiar el frontend construido a public/app del backend
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -105,14 +120,16 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      - name: Resetear OPcache
-        # Trampa ya documentada: un `git pull` actualiza los archivos en el
-        # disco al instante, pero en hosting compartido con PHP-FPM/LiteSpeed
-        # las peticiones reales pueden seguir sirviendo el bytecode viejo
-        # cacheado hasta que algo DENTRO de una petición HTTP real llama a
-        # opcache_reset() — no hay forma de hacerlo por SSH/CLI, son pools
-        # distintos. Por eso el truco: subir un PHP temporal, pegarle un
-        # curl, y borrarlo enseguida.
+      - name: Publicar en public_html (Hostinger no permite cambiar el document root)
+        # Confirmado en el primer deploy real: este plan de Hostinger NO deja
+        # cambiar el document root de la web, así que public_html no puede
+        # ser simplemente un symlink a backend/public — hay que COPIAR el
+        # contenido de backend/public ahí (igual que ya hacemos en otro
+        # proyecto nuestro en esta misma cuenta). Por eso index.php también
+        # se regenera acá con rutas absolutas: el index.php tal cual lo trae
+        # Laravel usa rutas relativas (__DIR__.'/../vendor/...'), que dejan
+        # de ser válidas en cuanto el archivo vive físicamente en una
+        # carpeta distinta (public_html) de donde está vendor/.
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -121,7 +138,56 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            RESET_FILE="${{ secrets.APP_PATH }}/public/__opcache_reset.php"
+            APP_PATH="${{ secrets.APP_PATH }}"
+            PUBLIC_HTML="${{ secrets.PUBLIC_HTML_PATH }}"
+
+            rsync -a --exclude 'storage' --exclude 'index.php' "$APP_PATH/public/" "$PUBLIC_HTML/"
+
+            # Sin heredoc a propósito: dentro de un bloque YAML indentado el
+            # delimitador de cierre de un heredoc no puede ir pegado a la
+            # columna 0, así que un heredoc normal se queda colgado
+            # esperando un cierre que nunca llega. printf con %s es simple
+            # y no tiene ese problema.
+            printf '%s\n' \
+              '<?php' \
+              '' \
+              'use Illuminate\Foundation\Application;' \
+              'use Illuminate\Http\Request;' \
+              '' \
+              'define("LARAVEL_START", microtime(true));' \
+              '' \
+              "if (file_exists(\$maintenance = \"$APP_PATH/storage/framework/maintenance.php\")) {" \
+              '    require $maintenance;' \
+              '}' \
+              '' \
+              "require \"$APP_PATH/vendor/autoload.php\";" \
+              '' \
+              '/** @var Application $app */' \
+              "\$app = require_once \"$APP_PATH/bootstrap/app.php\";" \
+              '' \
+              '$app->handleRequest(Request::capture());' \
+              > "$PUBLIC_HTML/index.php"
+
+            rm -rf "$PUBLIC_HTML/storage"
+            ln -s "$APP_PATH/storage/app/public" "$PUBLIC_HTML/storage"
+
+      - name: Resetear OPcache
+        # Trampa ya documentada: un `git pull` actualiza los archivos en el
+        # disco al instante, pero en hosting compartido las peticiones reales
+        # pueden seguir sirviendo el bytecode viejo cacheado hasta que algo
+        # DENTRO de una petición HTTP real llama a opcache_reset() — no hay
+        # forma de hacerlo por SSH/CLI, son pools distintos. Por eso el
+        # truco: subir un PHP temporal a public_html (la carpeta que
+        # realmente sirve el navegador), pegarle un curl, y borrarlo enseguida.
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            RESET_FILE="${{ secrets.PUBLIC_HTML_PATH }}/__opcache_reset.php"
             echo '<?php if (function_exists("opcache_reset")) { opcache_reset(); } echo "ok";' > "$RESET_FILE"
             curl -fsS "${{ vars.APP_URL }}/__opcache_reset.php" || true
             rm -f "$RESET_FILE"
