@@ -1,0 +1,127 @@
+name: Pruebas y despliegue
+
+# Se prueba en cada push y en cada pull request. El despliegue a Hostinger
+# solo corre en push a "main" y solo si las pruebas pasaron primero —
+# "continuous deployment" siempre detrás de un gate de "continuous testing",
+# nunca al revés.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Pruebas (backend + build del frontend)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, sqlite3
+          coverage: none
+
+      - name: Instalar dependencias de Composer
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Preparar entorno de pruebas
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Correr pruebas (PHPUnit)
+        working-directory: backend
+        run: php artisan test
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias del frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Construir el frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Guardar el build del frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  deploy:
+    name: Desplegar a Hostinger
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el build del frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Actualizar el código en el servidor (git pull + dependencias + migraciones)
+        # secrets.APP_PATH apunta a la carpeta del BACKEND en el servidor
+        # (ej. ~/proyecto-nuclear/backend) — el repo clonado vive un nivel
+        # arriba de eso, por eso el "git pull" corre en el directorio padre.
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            cd "${{ secrets.APP_PATH }}/.."
+            git pull origin main
+            cd "${{ secrets.APP_PATH }}"
+            composer install --no-interaction --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:clear
+
+      - name: Copiar el frontend construido al servidor
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: 'frontend-dist/*'
+          target: ${{ secrets.APP_PATH }}/public/app
+          strip_components: 1
+          overwrite: true
+
+      - name: Resetear OPcache
+        # Trampa ya documentada: un `git pull` actualiza los archivos en el
+        # disco al instante, pero en hosting compartido con PHP-FPM/LiteSpeed
+        # las peticiones reales pueden seguir sirviendo el bytecode viejo
+        # cacheado hasta que algo DENTRO de una petición HTTP real llama a
+        # opcache_reset() — no hay forma de hacerlo por SSH/CLI, son pools
+        # distintos. Por eso el truco: subir un PHP temporal, pegarle un
+        # curl, y borrarlo enseguida.
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            set -e
+            RESET_FILE="${{ secrets.APP_PATH }}/public/__opcache_reset.php"
+            echo '<?php if (function_exists("opcache_reset")) { opcache_reset(); } echo "ok";' > "$RESET_FILE"
+            curl -fsS "${{ vars.APP_URL }}/__opcache_reset.php" || true
+            rm -f "$RESET_FILE"
