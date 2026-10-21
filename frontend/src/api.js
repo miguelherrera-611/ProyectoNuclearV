@@ -63,7 +63,6 @@ export const api = {
   verifyTwoFactor: (challenge_token, code) =>
     request('/api/auth/verify-two-factor', { method: 'POST', body: { challenge_token, code } }),
   logout: (token) => request('/api/auth/logout', { method: 'POST', token }),
-  me: (token) => request('/api/auth/me', { token }),
 }
 
 export { ApiError }
