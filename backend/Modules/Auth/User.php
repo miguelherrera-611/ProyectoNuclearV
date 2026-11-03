@@ -39,7 +39,22 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
+
+    /**
+     * Rol "administrador": gestiona productos, captura datos históricos y
+     * corre pronósticos. Rol "gerente": no puede crear/editar nada, solo
+     * consultar — incluyendo correr un pronóstico, que no modifica datos.
+     */
+    public const ROLE_ADMINISTRADOR = 'administrador';
+
+    public const ROLE_GERENTE = 'gerente';
+
+    public function esAdministrador(): bool
+    {
+        return $this->role === self::ROLE_ADMINISTRADOR;
+    }
 
     /**
      * Campos que nunca se exponen al convertir el modelo a JSON/array.

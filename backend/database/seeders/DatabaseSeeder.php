@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Modules\Auth\User;
+use Modules\Productos\Producto;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,6 +26,19 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'role' => User::ROLE_ADMINISTRADOR,
         ]);
+
+        // Los 2 productos reales que trae el cliente en su histórico
+        // (Requisitos_JR_Forecast.docx, sección 2).
+        Producto::query()->firstOrCreate(
+            ['codigo' => 'MICO-ACEL-001'],
+            ['nombre' => 'Mico Acelerador Tornillo en Hierro', 'activo' => true],
+        );
+
+        Producto::query()->firstOrCreate(
+            ['codigo' => 'MICO-CLUTCH-001'],
+            ['nombre' => 'Mico Clutch Bronce Tornillo en Hierro', 'activo' => true],
+        );
     }
 }

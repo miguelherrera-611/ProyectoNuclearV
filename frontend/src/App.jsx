@@ -1,19 +1,21 @@
 import { useState } from 'react'
-import { AuthProvider } from './auth/AuthContext'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AuthProvider, useAuth } from './auth/AuthContext'
+import AppLayout from './components/AppLayout'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
+import ObservacionesPage from './pages/ObservacionesPage'
+import ProductosPage from './pages/ProductosPage'
+import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
 
-// Orquesta las 3 pantallas del flujo de login como una máquina de estados
-// simple (login → two-factor → dashboard). No hace falta una librería de
-// rutas (react-router) para esto: no es un sitio con varias páginas
-// independientes, es un único flujo de 3 pasos — estado local de React
-// (useState) alcanza y sobra, siguiendo el criterio del proyecto de evitar
-// dependencias/herramientas que no hacen falta todavía.
-function AppContent() {
+// Mientras no hay sesión, el login + 2FA es un flujo de 2 pasos simple (sin
+// rutas propias — son solo 2 pantallas de paso, no páginas independientes).
+// Una vez autenticado, recién ahí entra react-router: ya hay varias
+// pantallas reales (productos, datos históricos, pronóstico) que necesitan
+// su propia URL.
+function FlujoDeAcceso() {
   const [step, setStep] = useState('login')
-  // Datos que el paso 1 (login) le pasa al paso 2 (2FA): a qué desafío
-  // corresponde el código, y el código de desarrollo si no hay Brevo configurado.
   const [challenge, setChallenge] = useState(null)
 
   if (step === 'login') {
@@ -27,18 +29,35 @@ function AppContent() {
     )
   }
 
-  if (step === 'two-factor') {
-    return (
-      <TwoFactorPage
-        challengeToken={challenge.challengeToken}
-        devCode={challenge.devCode}
-        onBack={() => setStep('login')}
-        onVerified={() => setStep('dashboard')}
-      />
-    )
+  return (
+    <TwoFactorPage
+      challengeToken={challenge.challengeToken}
+      devCode={challenge.devCode}
+      onBack={() => setStep('login')}
+      onVerified={() => {}}
+    />
+  )
+}
+
+function AppContent() {
+  const { token } = useAuth()
+
+  if (!token) {
+    return <FlujoDeAcceso />
   }
 
-  return <Dashboard onLoggedOut={() => setStep('login')} />
+  return (
+    <BrowserRouter>
+      <AppLayout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/productos" element={<ProductosPage />} />
+          <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
+          <Route path="/pronostico" element={<PronosticoPage />} />
+        </Routes>
+      </AppLayout>
+    </BrowserRouter>
+  )
 }
 
 export default function App() {
