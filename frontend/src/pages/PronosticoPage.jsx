@@ -20,10 +20,15 @@ import { formatearNumero, formatearPeriodo, formatearPorcentaje } from '../forma
 const COLOR_REAL = '#2a78d6'
 const COLOR_PRONOSTICO = '#eb6834'
 
-const METODOS = [
-  { valor: 'promedio_movil_simple', etiqueta: 'Promedio móvil simple' },
-  { valor: 'suavizacion_exponencial_tendencia', etiqueta: 'Suavización exponencial con tendencia (Holt)' },
-]
+const METODOS = {
+  promedio_movil_simple: 'Promedio móvil simple',
+  promedio_movil_ponderado: 'Promedio móvil ponderado',
+  suavizamiento_exponencial: 'Suavizamiento exponencial',
+  suavizacion_exponencial_tendencia: 'Suavización exponencial con tendencia (Holt)',
+}
+
+const inputClase =
+  'rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none'
 
 export default function PronosticoPage() {
   const { token } = useAuth()
@@ -33,7 +38,12 @@ export default function PronosticoPage() {
   const [productoId, setProductoId] = useState(searchParams.get('producto') ?? '')
   const [metodo, setMetodo] = useState('promedio_movil_simple')
   const [n, setN] = useState(2)
-  const [alpha, setAlpha] = useState(0.5)
+  // Valores por defecto = los del Excel de ejemplo del cliente.
+  const [pesos, setPesos] = useState(['0.4', '0.6'])
+  const [alpha, setAlpha] = useState('0.45')
+  const [pronosticoInicial, setPronosticoInicial] = useState('')
+  // Holt lleva su propio α para no pisar el del suavizamiento simple.
+  const [alphaHolt, setAlphaHolt] = useState(0.5)
   const [beta, setBeta] = useState(0.5)
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState('')
@@ -56,14 +66,19 @@ export default function PronosticoPage() {
       return
     }
 
+    const parametros = {
+      promedio_movil_simple: { n: Number(n) },
+      promedio_movil_ponderado: { pesos: pesos.map(Number) },
+      suavizamiento_exponencial: {
+        alpha: Number(alpha),
+        pronostico_inicial: pronosticoInicial === '' ? null : Number(pronosticoInicial),
+      },
+      suavizacion_exponencial_tendencia: { alpha: Number(alphaHolt), beta: Number(beta) },
+    }[metodo]
+
     setCalculando(true)
     try {
-      const params =
-        metodo === 'promedio_movil_simple'
-          ? { producto_id: productoId, metodo, n: Number(n) }
-          : { producto_id: productoId, metodo, alpha: Number(alpha), beta: Number(beta) }
-
-      const data = await api.pronosticos.calcular(token, params)
+      const data = await api.pronosticos.calcular(token, { producto_id: productoId, metodo, ...parametros })
       setResultado(data)
     } catch (err) {
       setError(err.message)
@@ -71,6 +86,15 @@ export default function PronosticoPage() {
       setCalculando(false)
     }
   }
+
+  // Cambiar n en el ponderado agrega o quita pesos, conservando los que ya había.
+  function cambiarCantidadDePesos(valor) {
+    const cantidad = Math.max(2, Number(valor) || 2)
+    setPesos((actuales) => Array.from({ length: cantidad }, (_, i) => actuales[i] ?? '0'))
+  }
+
+  const sumaPesos = pesos.reduce((suma, p) => suma + (Number(p) || 0), 0)
+  const pesosSumanUno = Math.abs(sumaPesos - 1) <= 0.0001
 
   const datosGrafico = resultado?.filas.map((f) => ({
     periodo: formatearPeriodo(f.periodo),
@@ -80,7 +104,7 @@ export default function PronosticoPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Pronóstico</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Pronóstico — {METODOS[metodo]}</h1>
 
       <form
         onSubmit={handleCalcular}
@@ -112,18 +136,21 @@ export default function PronosticoPage() {
           <select
             id="metodo"
             value={metodo}
-            onChange={(e) => setMetodo(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            onChange={(e) => {
+              setMetodo(e.target.value)
+              setResultado(null)
+            }}
+            className={inputClase}
           >
-            {METODOS.map((m) => (
-              <option key={m.valor} value={m.valor}>
-                {m.etiqueta}
+            {Object.entries(METODOS).map(([clave, nombre]) => (
+              <option key={clave} value={clave}>
+                {nombre}
               </option>
             ))}
           </select>
         </div>
 
-        {metodo === 'promedio_movil_simple' ? (
+        {metodo === 'promedio_movil_simple' && (
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n">
               n (periodos)
@@ -137,11 +164,52 @@ export default function PronosticoPage() {
               className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
             />
           </div>
-        ) : (
+        )}
+
+        {metodo === 'promedio_movil_ponderado' && (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n-pesos">
+                n (periodos)
+              </label>
+              <input
+                id="n-pesos"
+                type="number"
+                min="2"
+                value={pesos.length}
+                onChange={(e) => cambiarCantidadDePesos(e.target.value)}
+                className={`w-24 ${inputClase}`}
+              />
+            </div>
+            {pesos.map((peso, i) => (
+              <div key={i}>
+                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor={`peso-${i}`}>
+                  w{i + 1} {i === 0 ? '(más reciente)' : `(t−${i + 1})`}
+                </label>
+                <input
+                  id={`peso-${i}`}
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={peso}
+                  onChange={(e) => setPesos((actuales) => actuales.map((p, j) => (j === i ? e.target.value : p)))}
+                  className={`w-24 ${inputClase}`}
+                />
+              </div>
+            ))}
+            <p className={`pb-2 text-sm ${pesosSumanUno ? 'text-slate-500' : 'text-red-700'}`}>
+              Suma: {formatearNumero(sumaPesos)}
+              {!pesosSumanUno && ' — debe ser 1'}
+            </p>
+          </>
+        )}
+
+        {metodo === 'suavizamiento_exponencial' && (
           <>
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha">
-                α (nivel)
+                α (0–1)
               </label>
               <input
                 id="alpha"
@@ -151,7 +219,41 @@ export default function PronosticoPage() {
                 step="0.01"
                 value={alpha}
                 onChange={(e) => setAlpha(e.target.value)}
-                className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                className={`w-24 ${inputClase}`}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="pronostico-inicial">
+                Pronóstico inicial
+              </label>
+              <input
+                id="pronostico-inicial"
+                type="number"
+                min="0"
+                placeholder="Primer dato"
+                value={pronosticoInicial}
+                onChange={(e) => setPronosticoInicial(e.target.value)}
+                className={`w-32 ${inputClase}`}
+              />
+            </div>
+          </>
+        )}
+
+        {metodo === 'suavizacion_exponencial_tendencia' && (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha-holt">
+                α (nivel)
+              </label>
+              <input
+                id="alpha-holt"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value={alphaHolt}
+                onChange={(e) => setAlphaHolt(e.target.value)}
+                className={`w-24 ${inputClase}`}
               />
             </div>
             <div>
@@ -166,7 +268,7 @@ export default function PronosticoPage() {
                 step="0.01"
                 value={beta}
                 onChange={(e) => setBeta(e.target.value)}
-                className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+                className={`w-24 ${inputClase}`}
               />
             </div>
           </>

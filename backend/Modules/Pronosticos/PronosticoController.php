@@ -3,28 +3,50 @@
 namespace Modules\Pronosticos;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use InvalidArgumentException;
 
 class PronosticoController
 {
     // Mapeo chico clave→clase en vez de una clase de registro aparte — el
-    // módulo se queda plano. Agregar un método nuevo (P2, P3, P5, P6) es
-    // sumar una línea acá más su propia clase.
+    // módulo se queda plano. Agregar un método nuevo (P5, P6) es sumar una
+    // línea acá, sus reglas abajo y su propia clase (RNF-21).
     private const METODOS = [
         'promedio_movil_simple' => PromedioMovilSimple::class,
+        'promedio_movil_ponderado' => PromedioMovilPonderado::class,
+        'suavizamiento_exponencial' => SuavizamientoExponencial::class,
         'suavizacion_exponencial_tendencia' => SuavizacionExponencialTendencia::class,
     ];
 
     public function calcular(Request $request)
     {
-        $data = $request->validate([
+        $request->validate([
             'producto_id' => ['required', 'integer', 'exists:productos,id'],
-            'metodo' => ['required', 'string', 'in:'.implode(',', array_keys(self::METODOS))],
-            'n' => ['required_if:metodo,promedio_movil_simple', 'integer', 'min:2'],
-            'alpha' => ['required_if:metodo,suavizacion_exponencial_tendencia', 'numeric', 'gt:0', 'lte:1'],
-            'beta' => ['required_if:metodo,suavizacion_exponencial_tendencia', 'numeric', 'gt:0', 'lte:1'],
+            // Opcional para no romper a quien ya llama sin "metodo" (P1).
+            'metodo' => ['sometimes', 'string', Rule::in(array_keys(self::METODOS))],
         ]);
 
-        $observaciones = Observacion::where('producto_id', $data['producto_id'])
+        $metodo = $request->input('metodo', 'promedio_movil_simple');
+
+        $parametros = $request->validate(match ($metodo) {
+            'promedio_movil_simple' => [
+                'n' => ['required', 'integer', 'min:2'],
+            ],
+            'promedio_movil_ponderado' => [
+                'pesos' => ['required', 'array', 'min:2'],
+                'pesos.*' => ['required', 'numeric', 'min:0'],
+            ],
+            'suavizamiento_exponencial' => [
+                'alpha' => ['required', 'numeric', 'gt:0', 'max:1'],
+                'pronostico_inicial' => ['nullable', 'numeric', 'min:0'],
+            ],
+            'suavizacion_exponencial_tendencia' => [
+                'alpha' => ['required', 'numeric', 'gt:0', 'lte:1'],
+                'beta' => ['required', 'numeric', 'gt:0', 'lte:1'],
+            ],
+        });
+
+        $observaciones = Observacion::where('producto_id', $request->integer('producto_id'))
             ->orderBy('periodo')
             ->get(['periodo', 'cantidad'])
             ->map(fn ($o) => ['periodo' => $o->periodo->toDateString(), 'cantidad' => (float) $o->cantidad])
@@ -36,18 +58,17 @@ class PronosticoController
             ], 422);
         }
 
-        if ($data['metodo'] === 'promedio_movil_simple' && $data['n'] >= count($observaciones)) {
+        if ($metodo === 'promedio_movil_simple' && $parametros['n'] >= count($observaciones)) {
             return response()->json([
                 'message' => 'n debe ser menor que la cantidad de periodos capturados ('.count($observaciones).').',
             ], 422);
         }
 
-        $metodo = app(self::METODOS[$data['metodo']]);
-        $parametros = $data['metodo'] === 'promedio_movil_simple'
-            ? ['n' => $data['n']]
-            : ['alpha' => $data['alpha'], 'beta' => $data['beta']];
-
-        $resultado = $metodo->calcular($observaciones, $parametros);
+        try {
+            $resultado = app(self::METODOS[$metodo])->calcular($observaciones, $parametros);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
         return response()->json(['data' => $resultado]);
     }

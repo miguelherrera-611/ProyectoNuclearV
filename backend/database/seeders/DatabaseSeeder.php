@@ -37,5 +37,7 @@ class DatabaseSeeder extends Seeder
             ['codigo' => 'MICO-CLUTCH-001'],
             ['nombre' => 'Mico Clutch Bronce Tornillo en Hierro', 'activo' => true],
         );
+
+        $this->call(ObservacionesSeeder::class);
     }
 }
