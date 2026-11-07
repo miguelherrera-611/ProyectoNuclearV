@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import PantallaAcceso, { CampoAcceso } from '../components/PantallaAcceso'
+import { Aviso, BarraCarga, Boton } from '../components/ui'
 
 // Paso 1 del login: si las credenciales son correctas, el backend no
 // entrega token todavía — manda un código por correo.
@@ -37,51 +39,37 @@ export default function LoginPage({ onSubmitted }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
-      >
-        <h1 className="mb-6 text-xl font-semibold text-slate-900">Iniciar sesión</h1>
+    <PantallaAcceso>
+      <form onSubmit={handleSubmit} noValidate>
+        <h1 className="mb-8 font-display text-3xl font-bold sm:text-4xl">Iniciar sesión</h1>
 
-        {errors.form && (
-          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{errors.form}</p>
-        )}
+        {errors.form && <Aviso className="mb-6">{errors.form}</Aviso>}
 
-        <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="email">
-          Correo
-        </label>
-        <input
+        <CampoAcceso
           id="email"
+          etiqueta="Correo corporativo"
           type="email"
           autoComplete="username"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mb-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          error={errors.email}
         />
-        {errors.email && <p className="mb-3 text-sm text-red-600">{errors.email}</p>}
 
-        <label className="mb-1 mt-3 block text-sm font-medium text-slate-700" htmlFor="password">
-          Contraseña
-        </label>
-        <input
+        <CampoAcceso
           id="password"
+          etiqueta="Contraseña"
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          error={errors.password}
         />
-        {errors.password && <p className="mb-3 text-sm text-red-600">{errors.password}</p>}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-4 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? 'Enviando...' : 'Continuar'}
-        </button>
+        <Boton type="submit" disabled={submitting} className="mt-4 w-full uppercase tracking-wide">
+          Ingresar
+        </Boton>
+        {submitting && <BarraCarga etiqueta="Verificando credenciales…" />}
       </form>
-    </div>
+    </PantallaAcceso>
   )
 }

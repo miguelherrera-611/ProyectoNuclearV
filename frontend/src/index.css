@@ -1,5 +1,150 @@
 @import "tailwindcss";
 
+/* Modo oscuro por clase (.dark en <html>), no por la preferencia del sistema:
+   el usuario lo cambia desde la barra superior. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Colores de la Guía de identidad visual JR (secciones 2.1–2.3). Solo estos:
+   la guía prohíbe tonos intermedios, degradados o "un índigo más clarito
+   para el hover" (2.4). Cada parte de la pantalla usa un token, y el modo
+   oscuro solo cambia el valor del token — el principal y el acento se
+   intercambian (índigo ↔ cian). */
+:root {
+  --fondo: #f5f2ea;
+  --tarjeta: #ffffff;
+  --texto: #161a25;
+  --texto-sec: #687083;
+  --principal: #303b8f;
+  --sobre-principal: #ffffff;
+  /* Hover del botón principal: otro color de la paleta, no uno inventado. */
+  --principal-hover: #161a25;
+  --acento: #24d9e8;
+  --borde: #c9cbd2;
+  --campo: #687083;
+  --foco: #161a25;
+  --fila-alterna: #f5f2ea;
+  --barra: #303b8f;
+  --barra-texto: #ffffff;
+  --barra-linea: #303b8f;
+  --exito: #32b77a;
+  --alerta: #f0a43a;
+  --error: #df5b63;
+  /* Texto oscuro dentro de los recuadros de estado (2.5): nunca texto
+     pequeño verde/ámbar/rojo sobre blanco. */
+  --sobre-estado: #161a25;
+  --cian: #24d9e8;
+  --noche: #10131c;
+}
+
+.dark {
+  --fondo: #10131c;
+  --tarjeta: #181d2b;
+  --texto: #ffffff;
+  --texto-sec: #9aa2b4;
+  --principal: #24d9e8;
+  --sobre-principal: #10131c;
+  --principal-hover: #ffffff;
+  --acento: #303b8f;
+  --borde: #30364a;
+  --campo: #9aa2b4;
+  --foco: #24d9e8;
+  --fila-alterna: #10131c;
+  /* Barra superior oscura: tarjeta oscura con una línea cian (sección 6). */
+  --barra: #181d2b;
+  --barra-texto: #ffffff;
+  --barra-linea: #24d9e8;
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-tarjeta: var(--tarjeta);
+  --color-texto: var(--texto);
+  --color-texto-sec: var(--texto-sec);
+  --color-principal: var(--principal);
+  --color-sobre-principal: var(--sobre-principal);
+  --color-principal-hover: var(--principal-hover);
+  --color-acento: var(--acento);
+  --color-borde: var(--borde);
+  --color-campo: var(--campo);
+  --color-foco: var(--foco);
+  --color-fila-alterna: var(--fila-alterna);
+  --color-barra: var(--barra);
+  --color-barra-texto: var(--barra-texto);
+  --color-barra-linea: var(--barra-linea);
+  --color-exito: var(--exito);
+  --color-alerta: var(--alerta);
+  --color-error: var(--error);
+  --color-sobre-estado: var(--sobre-estado);
+  --color-cian: var(--cian);
+  --color-noche: var(--noche);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+/* Barra de carga cian (sección 4): nunca un anillo girando como "ruedita". */
+@keyframes barra-carga {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.barra-carga {
+  animation: barra-carga 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra-carga {
+    animation: none;
+    transform: none;
+    width: 100%;
+  }
+}
+
+/* Reporte PDF (sección 7): siempre con los colores del modo claro, hoja en
+   Blanco Hueso, y los fondos se imprimen tal cual. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  /* Ctrl+P desde modo oscuro también sale en claro. */
+  .dark {
+    --fondo: #f5f2ea;
+    --tarjeta: #ffffff;
+    --texto: #161a25;
+    --texto-sec: #687083;
+    --principal: #303b8f;
+    --sobre-principal: #ffffff;
+    --principal-hover: #161a25;
+    --acento: #24d9e8;
+    --borde: #c9cbd2;
+    --campo: #687083;
+    --foco: #161a25;
+    --fila-alterna: #f5f2ea;
+    --barra: #303b8f;
+    --barra-texto: #ffffff;
+    --barra-linea: #303b8f;
+  }
+
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

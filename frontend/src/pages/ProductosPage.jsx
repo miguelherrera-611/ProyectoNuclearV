@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { colorDeProducto } from '../tema/colores'
+import { useTema } from '../tema/TemaContext'
 
 export default function ProductosPage() {
   const { token, user } = useAuth()
+  const { tema } = useTema()
   const esAdministrador = user?.role === 'administrador'
 
   const [productos, setProductos] = useState([])
@@ -66,114 +70,129 @@ export default function ProductosPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Productos</h1>
+      <Titulo subtitulo="Catálogo de productos y acceso a su histórico de demanda.">Productos</Titulo>
 
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <Aviso className="mb-6">{error}</Aviso>}
 
       {esAdministrador && (
-        <form
-          onSubmit={handleCrear}
-          className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4"
-        >
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="codigo">
-              Código
-            </label>
-            <input
-              id="codigo"
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="nombre">
-              Nombre
-            </label>
-            <input
-              id="nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={enviando}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {enviando ? 'Agregando...' : 'Nuevo producto'}
-          </button>
-          {errorForm && <p className="w-full text-sm text-red-600">{errorForm}</p>}
-        </form>
+        <Tarjeta className="mb-6 p-4 sm:p-6">
+          <h2 className="mb-4 font-display text-lg font-bold">Nuevo producto</h2>
+          <form onSubmit={handleCrear} className="grid gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
+            <Campo id="codigo" etiqueta="Código">
+              <Entrada id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+            </Campo>
+            <Campo id="nombre" etiqueta="Nombre">
+              <Entrada id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            </Campo>
+            <Boton type="submit" disabled={enviando} className="w-full sm:w-auto">
+              {enviando ? 'Agregando…' : 'Agregar producto'}
+            </Boton>
+          </form>
+          {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
+        </Tarjeta>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-slate-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Código</th>
-              <th className="px-4 py-3 font-medium">Nombre</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
-              <th className="px-4 py-3 font-medium">Datos históricos</th>
-              {esAdministrador && <th className="px-4 py-3 font-medium">Acciones</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {cargando && (
-              <tr>
-                <td className="px-4 py-3 text-slate-400" colSpan={5}>
-                  Cargando...
-                </td>
-              </tr>
-            )}
+      {cargando && <BarraCarga etiqueta="Cargando productos…" />}
 
-            {!cargando && productos.length === 0 && (
-              <tr>
-                <td className="px-4 py-3 text-slate-400" colSpan={5}>
-                  No hay productos todavía.
-                </td>
-              </tr>
-            )}
+      {!cargando && productos.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">No hay productos todavía.</Tarjeta>
+      )}
 
+      {!cargando && productos.length > 0 && (
+        <>
+          {/* Celular: una tarjeta por producto. */}
+          <ul className="grid gap-3 md:hidden">
             {productos.map((producto) => (
-              <tr key={producto.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 text-slate-700">{producto.codigo}</td>
-                <td className="px-4 py-3 text-slate-700">{producto.nombre}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={
-                      producto.activo
-                        ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700'
-                        : 'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500'
-                    }
-                  >
-                    {producto.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <Link to={`/productos/${producto.id}/datos`} className="text-slate-900 underline">
-                    Ver datos
-                  </Link>
-                </td>
-                {esAdministrador && (
-                  <td className="px-4 py-3">
-                    {producto.activo && (
-                      <button
-                        type="button"
-                        onClick={() => handleDarDeBaja(producto)}
-                        className="text-red-600 hover:underline"
-                      >
+              <li key={producto.id}>
+                <Tarjeta className="p-4">
+                  <div className="flex items-start gap-3">
+                    <MarcaProducto color={colorDeProducto(productos, producto.id, tema)} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium break-words">{producto.nombre}</p>
+                      <p className="mt-1 text-sm text-texto-sec">
+                        {producto.codigo} · <EstadoProducto activo={producto.activo} />
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link
+                      to={`/productos/${producto.id}/datos`}
+                      className="inline-flex min-h-11 items-center border border-campo px-4 font-display text-sm font-bold text-texto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+                    >
+                      Ver datos
+                    </Link>
+                    {esAdministrador && producto.activo && (
+                      <Boton variante="texto" onClick={() => handleDarDeBaja(producto)}>
                         Dar de baja
-                      </button>
+                      </Boton>
                     )}
-                  </td>
-                )}
-              </tr>
+                  </div>
+                </Tarjeta>
+              </li>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </ul>
+
+          {/* Tableta y escritorio: tabla. */}
+          <div className="hidden md:block">
+            <Tabla etiqueta="Productos">
+              <thead>
+                <tr>
+                  <Th>Producto</Th>
+                  <Th>Código</Th>
+                  <Th>Estado</Th>
+                  <Th>Datos históricos</Th>
+                  {esAdministrador && <Th>Acciones</Th>}
+                </tr>
+              </thead>
+              <tbody>
+                {productos.map((producto) => (
+                  <Fila key={producto.id}>
+                    <Td>
+                      <span className="flex items-center gap-3">
+                        <MarcaProducto color={colorDeProducto(productos, producto.id, tema)} />
+                        {producto.nombre}
+                      </span>
+                    </Td>
+                    <Td className="text-texto-sec">{producto.codigo}</Td>
+                    <Td>
+                      <EstadoProducto activo={producto.activo} />
+                    </Td>
+                    <Td>
+                      <Link
+                        to={`/productos/${producto.id}/datos`}
+                        className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+                      >
+                        Ver datos
+                      </Link>
+                    </Td>
+                    {esAdministrador && (
+                      <Td>
+                        {producto.activo && (
+                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleDarDeBaja(producto)}>
+                            Dar de baja
+                          </Boton>
+                        )}
+                      </Td>
+                    )}
+                  </Fila>
+                ))}
+              </tbody>
+            </Tabla>
+          </div>
+        </>
+      )}
     </div>
+  )
+}
+
+// El color del producto en la lista es el mismo que en los gráficos (guía 5).
+function MarcaProducto({ color }) {
+  return <span aria-hidden="true" className="mt-1 inline-block size-3 shrink-0" style={{ backgroundColor: color }} />
+}
+
+// Activo/inactivo no es una "mejora", así que no usa el verde (guía 5.3).
+function EstadoProducto({ activo }) {
+  return (
+    <span className={activo ? 'font-medium text-texto' : 'text-texto-sec'}>{activo ? 'Activo' : 'Inactivo'}</span>
   )
 }

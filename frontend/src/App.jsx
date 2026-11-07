@@ -8,6 +8,7 @@ import ObservacionesPage from './pages/ObservacionesPage'
 import ProductosPage from './pages/ProductosPage'
 import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
+import { TemaProvider } from './tema/TemaContext'
 
 // Sin sesión: login + 2FA como flujo de 2 pasos simple, sin rutas propias.
 // react-router solo entra una vez autenticado, cuando ya hay varias
@@ -60,8 +61,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <TemaProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </TemaProvider>
   )
 }
