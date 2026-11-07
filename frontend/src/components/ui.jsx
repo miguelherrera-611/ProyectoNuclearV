@@ -1,12 +1,13 @@
-// Piezas de la guía de identidad JR (sección 6): esquinas rectas, sin
-// sombras, separadas por color de fondo y un borde fino. Todas usan los
-// tokens de index.css, así que el modo oscuro sale solo.
+// Piezas del sistema de diseño JR Forecast (esquinas curvas y sombra suave,
+// por decisión explícita de Miguel — se aparta de la guía de identidad real
+// del cliente, sección 6, que pide esquinas rectas sin sombras). Todas usan
+// los tokens de index.css, así que el modo oscuro sale solo.
 
 const ESTILO_FOCO =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
 
 const ESTILO_CAMPO =
-  'block min-h-11 w-full border border-campo bg-tarjeta px-3 py-2 text-base text-texto placeholder:text-texto-sec focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
+  'block min-h-11 w-full rounded-lg border border-campo bg-tarjeta px-3 py-2 text-base text-texto placeholder:text-texto-sec focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
 
 export function Titulo({ children, subtitulo, acciones }) {
   return (
@@ -21,7 +22,7 @@ export function Titulo({ children, subtitulo, acciones }) {
 }
 
 export function Tarjeta({ children, className = '' }) {
-  return <section className={`border border-borde bg-tarjeta ${className}`}>{children}</section>
+  return <section className={`rounded-xl border border-borde bg-tarjeta shadow-md ${className}`}>{children}</section>
 }
 
 // Un solo botón "principal" por pantalla (guía 2.4); el resto, secundario.
@@ -37,7 +38,7 @@ export function Boton({ variante = 'principal', className = '', type = 'button',
   return (
     <button
       type={type}
-      className={`inline-flex min-h-11 items-center justify-center px-5 py-2 font-display text-sm font-bold disabled:cursor-not-allowed ${variantes[variante]} ${ESTILO_FOCO} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center rounded-lg px-5 py-2 font-display text-sm font-bold disabled:cursor-not-allowed ${variantes[variante]} ${ESTILO_FOCO} ${className}`}
       {...props}
     />
   )
@@ -87,7 +88,7 @@ function IconoEstado({ tipo }) {
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex size-5 shrink-0 items-center justify-center text-xs font-bold text-sobre-estado ${fondo}`}
+      className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold text-sobre-estado ${fondo}`}
     >
       {icono}
     </span>
@@ -99,7 +100,7 @@ export function Aviso({ tipo = 'error', children, className = '' }) {
   return (
     <div
       role={tipo === 'error' ? 'alert' : 'status'}
-      className={`flex items-start gap-3 px-4 py-3 text-sm text-sobre-estado ${fondo} ${className}`}
+      className={`flex items-start gap-3 rounded-xl px-4 py-3 text-sm text-sobre-estado ${fondo} ${className}`}
     >
       <span aria-hidden="true" className="font-bold">
         {icono}
@@ -123,7 +124,7 @@ export function Estado({ estado }) {
   const { tipo, texto } = ESTADOS_TABLA[estado]
   const { fondo, icono } = ESTADOS[tipo]
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-bold text-sobre-estado ${fondo}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold text-sobre-estado ${fondo}`}>
       <span aria-hidden="true">{icono}</span>
       {texto}
     </span>
@@ -137,7 +138,7 @@ export function Variacion({ porcentaje, sufijo = 'vs. período anterior' }) {
   const valor = Math.abs(porcentaje).toLocaleString('es-CO', { maximumFractionDigits: 1 })
   return (
     <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-texto-sec">
-      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 font-bold text-sobre-estado ${mejora ? 'bg-exito' : 'bg-error'}`}>
+      <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-bold text-sobre-estado ${mejora ? 'bg-exito' : 'bg-error'}`}>
         <span aria-hidden="true">{mejora ? '↑' : '↓'}</span>
         <span className="sr-only">{mejora ? 'Sube' : 'Baja'}</span>
         {valor} %
@@ -177,8 +178,10 @@ export function BarraCarga({ etiqueta = 'Cargando…' }) {
 // angostas se desplaza dentro de su tarjeta, nunca la página entera.
 export function Tabla({ children, etiqueta }) {
   return (
-    <div className="overflow-x-auto border border-borde bg-tarjeta" role="region" aria-label={etiqueta} tabIndex={0}>
-      <table className="w-full border-collapse text-left text-sm">{children}</table>
+    <div className="overflow-hidden rounded-xl border border-borde bg-tarjeta shadow-md">
+      <div className="overflow-x-auto" role="region" aria-label={etiqueta} tabIndex={0}>
+        <table className="w-full border-collapse text-left text-sm">{children}</table>
+      </div>
     </div>
   )
 }

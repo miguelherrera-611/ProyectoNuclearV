@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { usePopover } from './usePopover'
 
 const ESTILO_CAMPO =
-  'block min-h-11 w-full border border-campo bg-tarjeta px-3 py-2 text-left text-base text-texto focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
+  'block min-h-11 w-full rounded-lg border border-campo bg-tarjeta px-3 py-2 text-left text-base text-texto focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
 
 // Dropdown con estilo propio (reemplazo de <Selector>, que es un <select>
 // nativo sin control sobre cómo se ve la lista desplegada). Mismo contrato
@@ -65,7 +65,7 @@ export default function Desplegable({ id, value, onChange, opciones, marcador = 
       {abierto && (
         <ul
           role="listbox"
-          className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto border border-campo bg-tarjeta"
+          className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-xl border border-campo bg-tarjeta shadow-lg"
         >
           {opciones.map((opcion, i) => (
             <li

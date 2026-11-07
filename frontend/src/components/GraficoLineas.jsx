@@ -89,8 +89,8 @@ export default function GraficoLineas({ datos, series, descripcion }) {
               contentStyle={{
                 background: texto.tarjeta,
                 border: `1px solid ${texto.borde}`,
-                borderRadius: 0,
-                boxShadow: 'none',
+                borderRadius: 12,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 color: texto.texto,
                 fontFamily: 'Inter',
                 fontSize: 13,

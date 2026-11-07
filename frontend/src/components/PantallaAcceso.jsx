@@ -10,17 +10,17 @@ import { useState } from 'react'
 // completos, con margen alrededor.
 export default function PantallaAcceso({ children }) {
   return (
-    <div className="dark min-h-screen bg-noche text-texto">
-      <div className="mx-auto grid min-h-screen max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 md:grid-cols-2 md:gap-16">
-        <div className="flex flex-col items-center text-center md:items-start md:text-left">
+    <div className="dark flex min-h-screen items-center justify-center bg-noche px-4 py-10 text-texto sm:px-6">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center text-center">
           <Anillos />
-          <p className="mt-6 font-display text-2xl font-bold sm:text-3xl">JR Forecast</p>
+          <p className="mt-4 font-display text-2xl font-bold sm:text-3xl">JR Forecast</p>
           <p className="mt-2 max-w-sm text-texto-sec">
             Pronósticos de producción · JR Mecanizados Industriales
           </p>
         </div>
 
-        <div className="w-full max-w-md justify-self-center">{children}</div>
+        {children}
       </div>
     </div>
   )
@@ -30,7 +30,7 @@ function Anillos() {
   return (
     <svg
       viewBox="0 0 200 200"
-      className="size-36 shrink-0 sm:size-48 md:size-56"
+      className="size-20 shrink-0 sm:size-24"
       role="img"
       aria-label="Anillos de JR Forecast"
     >
@@ -88,7 +88,7 @@ export function CampoAcceso({ id, etiqueta, error, type, ...props }) {
       </div>
       {error && (
         <p id={`${id}-error`} className="mt-2 flex items-start gap-2 text-sm text-texto">
-          <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center bg-error text-xs font-bold text-sobre-estado">
+          <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-error text-xs font-bold text-sobre-estado">
             ✕
           </span>
           {error}
