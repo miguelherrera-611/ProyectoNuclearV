@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import SelectorMes from '../components/SelectorMes'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { formatearPeriodo, formatearUnidades } from '../format'
 
@@ -123,7 +124,7 @@ export default function ObservacionesPage() {
           <h2 className="mb-4 font-display text-lg font-bold">Capturar o corregir un mes</h2>
           <form onSubmit={handleCapturar} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
             <Campo id="mes" etiqueta="Mes">
-              <Entrada id="mes" type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
+              <SelectorMes id="mes" value={mes} onChange={setMes} />
             </Campo>
             <Campo id="cantidad" etiqueta="Demanda (u)">
               <Entrada
