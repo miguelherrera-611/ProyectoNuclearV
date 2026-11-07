@@ -3,7 +3,7 @@ import { formatearPeriodo } from '../format'
 import { usePopover } from './usePopover'
 
 const ESTILO_CAMPO =
-  'block min-h-11 w-full border border-campo bg-tarjeta px-3 py-2 text-left text-base text-texto focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
+  'block min-h-11 w-full rounded-lg border border-campo bg-tarjeta px-3 py-2 text-left text-base text-texto focus:outline-2 focus:-outline-offset-1 focus:outline-foco sm:text-sm'
 
 function nombreMes(anio, mes) {
   const texto = new Date(anio, mes, 1).toLocaleDateString('es-CO', { month: 'short' })
@@ -44,7 +44,7 @@ export default function SelectorMes({ id, value, onChange, marcador = 'Seleccion
       </button>
 
       {abierto && (
-        <div className="absolute left-0 top-full z-10 mt-1 w-64 border border-campo bg-tarjeta p-3">
+        <div className="absolute left-0 top-full z-10 mt-1 w-64 rounded-xl border border-campo bg-tarjeta p-3 shadow-lg">
           <div className="mb-2 flex items-center justify-between">
             <button
               type="button"

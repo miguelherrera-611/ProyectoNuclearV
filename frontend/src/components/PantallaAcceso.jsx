@@ -88,7 +88,7 @@ export function CampoAcceso({ id, etiqueta, error, type, ...props }) {
       </div>
       {error && (
         <p id={`${id}-error`} className="mt-2 flex items-start gap-2 text-sm text-texto">
-          <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center bg-error text-xs font-bold text-sobre-estado">
+          <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-error text-xs font-bold text-sobre-estado">
             ✕
           </span>
           {error}
