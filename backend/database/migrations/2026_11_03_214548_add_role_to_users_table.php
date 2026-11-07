@@ -6,22 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Solo 2 roles en este recorte del proyecto (ver Requisitos_JR_Forecast.docx,
-            // que define 4 — "administrador" acá une Administrador+Planeador+Analista,
-            // "gerente" es el único de solo lectura, equivalente al Supervisor del documento).
+            // Solo 2 de los 4 roles del documento de requisitos:
+            // "administrador" une Administrador+Planeador+Analista,
+            // "gerente" (solo lectura) equivale al Supervisor.
             $table->enum('role', ['administrador', 'gerente'])->default('gerente')->after('password');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {

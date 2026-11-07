@@ -48,7 +48,7 @@ class CalcularPronosticoTest extends TestCase
     public function rechaza_n_mayor_o_igual_a_los_periodos_capturados(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
-        $producto = $this->productoConHistorico(); // 10 periodos
+        $producto = $this->productoConHistorico();
         $token = $admin->createToken('test')->plainTextToken;
 
         $this->withHeader('Authorization', "Bearer {$token}")

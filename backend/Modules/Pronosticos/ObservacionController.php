@@ -7,10 +7,6 @@ use Illuminate\Support\Carbon;
 
 class ObservacionController
 {
-    /**
-     * Lista las observaciones (periodos capturados) de un producto, en
-     * orden cronológico. Ambos roles pueden consultar.
-     */
     public function index(Request $request)
     {
         $request->validate(['producto_id' => ['required', 'integer', 'exists:productos,id']]);
@@ -22,28 +18,21 @@ class ObservacionController
         return response()->json(['data' => $observaciones]);
     }
 
-    /**
-     * Captura (o corrige, si ya existía) la demanda de un producto en un
-     * periodo. Solo administrador — es la puerta de entrada de los datos
-     * que alimentan el pronóstico.
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
             'producto_id' => ['required', 'integer', 'exists:productos,id'],
-            // Se manda el mes como "AAAA-MM-01"; el front siempre pide mes,
-            // nunca un día suelto — la granularidad de este recorte es mensual.
+            // Granularidad mensual: siempre "AAAA-MM-01", nunca un día suelto.
             'periodo' => ['required', 'date'],
             'cantidad' => ['required', 'integer', 'min:0'],
         ]);
 
-        // No se usa updateOrCreate() a propósito: el cast "date" del modelo
-        // guarda la columna con hora (ej. "2024-01-01 00:00:00"), pero
-        // updateOrCreate compara el valor exacto que se le pasa ("2024-01-01",
-        // sin hora) — nunca coinciden como string, así que nunca encuentra
-        // la fila que ya existe y choca con la restricción única al
-        // intentar insertar un duplicado. whereDate() sí compara por fecha
-        // sin importar la hora guardada.
+        // No se usa updateOrCreate(): el cast "date" del modelo guarda la
+        // columna con hora (ej. "2024-01-01 00:00:00"), pero updateOrCreate
+        // compara el valor exacto pasado ("2024-01-01", sin hora) — nunca
+        // coinciden como string, así que nunca encuentra la fila existente
+        // y choca con la restricción única al intentar duplicarla.
+        // whereDate() sí compara por fecha sin importar la hora guardada.
         $periodo = Carbon::parse($data['periodo'])->toDateString();
 
         $observacion = Observacion::where('producto_id', $data['producto_id'])
@@ -63,9 +52,6 @@ class ObservacionController
         return response()->json(['data' => $observacion], 201);
     }
 
-    /**
-     * Borra una observación capturada por error. Solo administrador.
-     */
     public function destroy(Observacion $observacion)
     {
         $observacion->delete();

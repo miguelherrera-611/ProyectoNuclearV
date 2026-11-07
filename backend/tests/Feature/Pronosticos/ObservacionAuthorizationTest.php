@@ -46,7 +46,7 @@ class ObservacionAuthorizationTest extends TestCase
             ->assertStatus(201);
 
         // Volver a mandar el mismo producto+periodo corrige la cantidad en
-        // vez de crear un duplicado (updateOrCreate).
+        // vez de crear un duplicado.
         $this->withHeader('Authorization', "Bearer {$token}")
             ->postJson('/api/observaciones', [
                 'producto_id' => $producto->id,

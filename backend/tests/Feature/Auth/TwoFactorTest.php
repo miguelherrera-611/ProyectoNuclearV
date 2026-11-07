@@ -24,7 +24,6 @@ class TwoFactorTest extends TestCase
             ->assertJsonPath('data.user.email', $user->email)
             ->assertJsonStructure(['data' => ['token', 'user' => ['id', 'name', 'email']]]);
 
-        // El token que entrega de verdad autoriza contra una ruta protegida.
         $token = $response->json('data.token');
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/auth/me')

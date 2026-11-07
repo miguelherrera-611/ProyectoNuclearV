@@ -14,8 +14,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // Calcular un pronóstico no modifica nada (no guarda un "escenario"
-    // todavía, eso es RF-33 y queda para después) — por eso no lleva el
-    // middleware 'admin': el Gerente también puede correrlo y verlo.
+    // Calcular no modifica nada (no persiste un "escenario" todavía, eso es
+    // RF-33) — por eso sin middleware 'admin': el Gerente también puede.
     Route::post('/pronosticos/calcular', [PronosticoController::class, 'calcular']);
 });

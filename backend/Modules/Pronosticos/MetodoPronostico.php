@@ -2,13 +2,9 @@
 
 namespace Modules\Pronosticos;
 
-/**
- * Contrato que debe cumplir cualquier método de pronóstico (P1–P6 del
- * documento de requisitos). Hoy solo existe PromedioMovilSimple (P1), pero
- * esta interfaz ya deja listo que agregar un método nuevo más adelante no
- * toque los que ya existen (RNF-21: patrón Strategy) — sin montar una capa
- * de más, es nada más esta interfaz chica.
- */
+// Contrato para cualquier método de pronóstico (P1–P6 del documento de
+// requisitos) — así agregar un método nuevo no toca los que ya existen
+// (RNF-21, patrón Strategy), sin montar una capa de más.
 interface MetodoPronostico
 {
     /**

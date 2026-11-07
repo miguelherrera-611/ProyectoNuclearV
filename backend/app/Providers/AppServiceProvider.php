@@ -22,26 +22,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Rate limiting para el login: 5 intentos por minuto.
-        //
-        // Ojo con la clave usada (`by`): si se limitara SOLO por IP (como
-        // hace el `throttle:5,1` genérico de Laravel), un atacante con
-        // varias IPs podría seguir probando contraseñas contra UNA misma
-        // cuenta sin que nada lo frene. Al combinar email+IP, cada cuenta
-        // también queda protegida individualmente, sin importar desde
-        // cuántas direcciones distintas se la ataque a la vez.
-        //
-        // (No es una solución completa contra un ataque MUY distribuido
-        // con miles de IPs diferentes — eso ya es un problema de otro nivel
-        // que normalmente se resuelve en el servidor/proxy, no en la app.
-        // Pero cubre el caso común de fuerza bruta.)
+        // Clave email+IP (no solo IP, como el throttle genérico de
+        // Laravel): un atacante con varias IPs no puede seguir probando
+        // contraseñas contra una misma cuenta.
         RateLimiter::for('login', function (Request $request) {
             return Limit::perMinute(5)->by($request->input('email').'|'.$request->ip());
         });
 
-        // Mismo criterio para el paso 2 (verificar el código 2FA), pero acá
-        // la clave natural es el challenge_token en vez del email, porque
-        // esa request no manda el correo.
+        // Mismo criterio, pero con challenge_token en vez de email — esta
+        // request no manda el correo.
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->input('challenge_token').'|'.$request->ip());
         });

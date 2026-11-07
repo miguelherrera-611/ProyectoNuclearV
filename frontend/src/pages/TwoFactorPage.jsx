@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 
-// Paso 2 del login: el código de 6 dígitos. Si es correcto, acá recién se
-// obtiene el token de acceso real (ver AuthContext.verifyTwoFactor).
 export default function TwoFactorPage({ challengeToken, devCode, onBack, onVerified }) {
   const { verifyTwoFactor } = useAuth()
   const [code, setCode] = useState('')
@@ -40,11 +38,8 @@ export default function TwoFactorPage({ challengeToken, devCode, onBack, onVerif
           Te enviamos un código de 6 dígitos por correo. Ingrésalo para continuar.
         </p>
 
-        {/* Este bloque solo aparece si el backend está corriendo en modo
-            desarrollo sin una API key de Brevo configurada todavía — así se
-            puede probar el flujo completo de 2FA sin un correo real. En
-            producción (o con la key configurada) `devCode` nunca llega y
-            este bloque no se muestra. */}
+        {/* Solo llega devCode si el backend está en modo desarrollo sin
+            Brevo configurado; en producción nunca aparece. */}
         {devCode && (
           <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
             Modo desarrollo (todavía sin Brevo configurado): tu código es <strong>{devCode}</strong>.
@@ -77,9 +72,7 @@ export default function TwoFactorPage({ challengeToken, devCode, onBack, onVerif
           {submitting ? 'Verificando...' : 'Verificar'}
         </button>
 
-        {/* Permite volver al paso 1 por si el usuario se equivocó de correo
-            (no hay forma de reenviar el código desde acá: solo se pide uno
-            nuevo haciendo login de nuevo). */}
+        {/* No hay reenvío de código — solo volver a hacer login pide uno nuevo. */}
         <button
           type="button"
           onClick={onBack}

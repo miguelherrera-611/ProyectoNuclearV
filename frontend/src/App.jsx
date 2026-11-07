@@ -9,11 +9,9 @@ import ProductosPage from './pages/ProductosPage'
 import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
 
-// Mientras no hay sesión, el login + 2FA es un flujo de 2 pasos simple (sin
-// rutas propias — son solo 2 pantallas de paso, no páginas independientes).
-// Una vez autenticado, recién ahí entra react-router: ya hay varias
-// pantallas reales (productos, datos históricos, pronóstico) que necesitan
-// su propia URL.
+// Sin sesión: login + 2FA como flujo de 2 pasos simple, sin rutas propias.
+// react-router solo entra una vez autenticado, cuando ya hay varias
+// pantallas reales con necesidad de URL propia.
 function FlujoDeAcceso() {
   const [step, setStep] = useState('login')
   const [challenge, setChallenge] = useState(null)
@@ -62,8 +60,6 @@ function AppContent() {
 
 export default function App() {
   return (
-    // AuthProvider envuelve toda la app para que cualquier pantalla pueda
-    // leer/usar la sesión actual con el hook useAuth().
     <AuthProvider>
       <AppContent />
     </AuthProvider>

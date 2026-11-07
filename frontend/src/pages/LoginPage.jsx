@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 
-// Paso 1 del login: correo + contraseña. Si son correctos, el backend NO
-// entrega ningún token todavía — manda un código por correo y este
-// componente avisa al padre (App.jsx) para pasar a la pantalla de 2FA.
+// Paso 1 del login: si las credenciales son correctas, el backend no
+// entrega token todavía — manda un código por correo.
 export default function LoginPage({ onSubmitted }) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
@@ -15,10 +14,8 @@ export default function LoginPage({ onSubmitted }) {
     event.preventDefault()
     setErrors({})
 
-    // Validación en el frontend: es solo para dar retroalimentación
-    // inmediata (mejor experiencia). La seguridad real está en el backend,
-    // que vuelve a validar todo — cualquier validación de acá se puede
-    // saltar fácilmente (ej. llamando a la API directo).
+    // Solo retroalimentación inmediata — la seguridad real la vuelve a
+    // validar el backend.
     if (!email) {
       setErrors({ email: 'Ingresa tu correo.' })
       return
@@ -31,12 +28,8 @@ export default function LoginPage({ onSubmitted }) {
     setSubmitting(true)
     try {
       const data = await login(email, password)
-      // challengeToken identifica el desafío 2FA; devCode solo viene si el
-      // backend está en modo desarrollo (sin Brevo configurado todavía).
       onSubmitted({ challengeToken: data.challenge_token, devCode: data.dev_code })
     } catch (error) {
-      // Mensaje genérico que ya viene armado así desde el backend a
-      // propósito: nunca revela si el correo existe o no.
       setErrors({ form: error.message })
     } finally {
       setSubmitting(false)
@@ -81,8 +74,6 @@ export default function LoginPage({ onSubmitted }) {
         />
         {errors.password && <p className="mb-3 text-sm text-red-600">{errors.password}</p>}
 
-        {/* Deshabilitado mientras se envía, para evitar doble-click /
-            doble-submit mientras se espera la respuesta del backend. */}
         <button
           type="submit"
           disabled={submitting}

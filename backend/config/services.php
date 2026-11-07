@@ -35,10 +35,6 @@ return [
         ],
     ],
 
-    // Credenciales para mandar el código de 2FA por correo (ver
-    // Modules\Auth\BrevoMailer). Mientras BREVO_API_KEY esté vacío en el
-    // .env, el envío real falla silenciosamente y en entorno local se usa
-    // el código "dev_code" que devuelve la API en su lugar.
     'brevo' => [
         'api_key' => env('BREVO_API_KEY'),
         'sender_email' => env('BREVO_SENDER_EMAIL'),

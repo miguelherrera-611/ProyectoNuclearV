@@ -68,10 +68,9 @@ class LoginTest extends TestCase
 
     public function test_login_with_nonexistent_email_returns_the_same_generic_error(): void
     {
-        // Clave de seguridad: un correo que no existe debe dar EXACTAMENTE
-        // el mismo error (mismo mensaje, mismo código HTTP) que una
-        // contraseña incorrecta — si no, se puede usar el login para
-        // adivinar qué correos están registrados (enumeración de usuarios).
+        // Debe dar EXACTAMENTE el mismo error que una contraseña
+        // incorrecta — si no, el login sirve para adivinar qué correos
+        // están registrados.
         $response = $this->postJson('/api/auth/login', [
             'email' => 'no-existe@example.com',
             'password' => 'lo-que-sea',

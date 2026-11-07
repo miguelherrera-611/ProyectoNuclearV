@@ -6,12 +6,6 @@ use Illuminate\Http\Request;
 
 class PronosticoController
 {
-    /**
-     * Calcula un pronóstico (hoy solo existe P1, promedio móvil simple) y
-     * devuelve la tabla periodo a periodo + las métricas de error. No
-     * guarda nada — es una consulta, por eso ambos roles pueden usarla
-     * (ver routes.php: no lleva el middleware 'admin').
-     */
     public function calcular(Request $request, PromedioMovilSimple $metodo)
     {
         $data = $request->validate([

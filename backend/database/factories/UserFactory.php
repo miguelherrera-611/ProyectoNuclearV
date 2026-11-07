@@ -12,22 +12,13 @@ use Modules\Auth\User;
  */
 class UserFactory extends Factory
 {
-    /**
-     * Por defecto, Laravel adivina a qué modelo pertenece una Factory a
-     * partir del nombre de la propia clase, asumiendo que el modelo vive
-     * bajo el namespace `App\`. Como User vive bajo `Modules\Auth\`, hay
-     * que decírselo explícitamente (si no, truena buscando "App\User").
-     */
+    // Laravel adivina el modelo asumiendo namespace `App\`; User vive bajo
+    // `Modules\Auth\`, hay que indicarlo (si no, busca "App\User").
     protected $model = User::class;
 
-    /**
-     * The current password being used by the factory.
-     */
     protected static ?string $password;
 
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -41,9 +32,6 @@ class UserFactory extends Factory
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -6,9 +6,6 @@ use Illuminate\Http\Request;
 
 class ProductoController
 {
-    /**
-     * Lista todos los productos. Ambos roles pueden consultar.
-     */
     public function index()
     {
         return response()->json([
@@ -16,9 +13,6 @@ class ProductoController
         ]);
     }
 
-    /**
-     * Crea un producto nuevo. Solo administrador (ver middleware 'admin' en routes.php).
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -31,9 +25,6 @@ class ProductoController
         return response()->json(['data' => new ProductoResource($producto)], 201);
     }
 
-    /**
-     * Edita nombre/código de un producto. Solo administrador.
-     */
     public function update(Request $request, Producto $producto)
     {
         $data = $request->validate([
@@ -46,10 +37,8 @@ class ProductoController
         return response()->json(['data' => new ProductoResource($producto)]);
     }
 
-    /**
-     * Da de baja un producto (nunca se borra de verdad: las observaciones
-     * históricas lo referencian y deben conservarse). Solo administrador.
-     */
+    // Nunca se borra de verdad: las observaciones históricas lo referencian
+    // y deben conservarse.
     public function destroy(Producto $producto)
     {
         $producto->update(['activo' => false]);

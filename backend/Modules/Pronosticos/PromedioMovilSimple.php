@@ -6,18 +6,12 @@ use Carbon\Carbon;
 use InvalidArgumentException;
 
 /**
- * P1 — Promedio Móvil Simple, tal como lo define el documento de requisitos
- * y el ejemplo numérico del cliente (movil simple.xlsx):
+ * P1 — Promedio Móvil Simple: F(t) = promedio(D(t-1), ..., D(t-n)), para t
+ * desde el periodo n+1, tal como lo define el ejemplo numérico del cliente
+ * (movil simple.xlsx).
  *
- *   F(t) = promedio(D(t-1), ..., D(t-n))   — para t desde el periodo n+1.
- *
- * Antes de eso no hay pronóstico. El periodo siguiente al último dato real
- * (el "hacia adelante") también se calcula, pero no entra en las métricas
- * de error porque no hay demanda real todavía con qué compararlo.
- *
- * Clase pura: no toca la base de datos, solo recibe arreglos y devuelve
- * arreglos — así se puede probar exacto contra los números que firmó el
- * cliente, sin necesidad de levantar nada.
+ * Clase pura (no toca la base de datos) para poder probarla exacto contra
+ * los números que firmó el cliente.
  */
 class PromedioMovilSimple implements MetodoPronostico
 {
@@ -54,8 +48,6 @@ class PromedioMovilSimple implements MetodoPronostico
                 'error_relativo' => null,
             ];
 
-            // Recién hay pronóstico cuando ya pasaron al menos n periodos
-            // anteriores (ej. con n=2, el primer pronóstico es el periodo 3).
             if ($i >= $n) {
                 $ventana = array_slice($demandas, $i - $n, $n);
                 $pronostico = array_sum($ventana) / $n;
@@ -81,9 +73,7 @@ class PromedioMovilSimple implements MetodoPronostico
             $filas[] = $fila;
         }
 
-        // Pronóstico "hacia adelante": el periodo siguiente al último dato
-        // real, usando los últimos n valores conocidos. No tiene demanda
-        // real todavía, así que no entra en MAD/MSE/MAPE/RSFE.
+        // No tiene demanda real todavía, así que no entra en MAD/MSE/MAPE/RSFE.
         $ventanaFinal = array_slice($demandas, $m - $n, $n);
         $pronosticoSiguiente = array_sum($ventanaFinal) / $n;
         $periodoSiguiente = Carbon::parse($periodos[$m - 1])->addMonthNoOverflow()->toDateString();

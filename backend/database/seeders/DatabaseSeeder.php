@@ -18,19 +18,16 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // Como todavía no hay una pantalla de registro, se necesita un
-        // usuario de prueba para poder probar el login. Credenciales:
-        // test@example.com / password (la contraseña por defecto que pone
-        // UserFactory). Solo para desarrollo — cambiar o borrar antes de
-        // llevar esto a producción.
+        // Sin pantalla de registro todavía — usuario de prueba para
+        // desarrollo (test@example.com / password). Cambiar o borrar antes
+        // de producción.
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
             'role' => User::ROLE_ADMINISTRADOR,
         ]);
 
-        // Los 2 productos reales que trae el cliente en su histórico
-        // (Requisitos_JR_Forecast.docx, sección 2).
+        // Productos reales del histórico del cliente (Requisitos_JR_Forecast.docx).
         Producto::query()->firstOrCreate(
             ['codigo' => 'MICO-ACEL-001'],
             ['nombre' => 'Mico Acelerador Tornillo en Hierro', 'activo' => true],
