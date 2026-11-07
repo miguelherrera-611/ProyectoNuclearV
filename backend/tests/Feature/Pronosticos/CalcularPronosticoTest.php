@@ -37,7 +37,11 @@ class CalcularPronosticoTest extends TestCase
         $token = $gerente->createToken('test')->plainTextToken;
 
         $response = $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/pronosticos/calcular', ['producto_id' => $producto->id, 'n' => 2]);
+            ->postJson('/api/pronosticos/calcular', [
+                'producto_id' => $producto->id,
+                'metodo' => 'promedio_movil_simple',
+                'n' => 2,
+            ]);
 
         $response->assertOk();
         $this->assertEqualsWithDelta(2.69, $response->json('data.metricas.mad'), 0.01);
@@ -52,7 +56,49 @@ class CalcularPronosticoTest extends TestCase
         $token = $admin->createToken('test')->plainTextToken;
 
         $this->withHeader('Authorization', "Bearer {$token}")
-            ->postJson('/api/pronosticos/calcular', ['producto_id' => $producto->id, 'n' => 10])
+            ->postJson('/api/pronosticos/calcular', [
+                'producto_id' => $producto->id,
+                'metodo' => 'promedio_movil_simple',
+                'n' => 10,
+            ])
+            ->assertStatus(422);
+    }
+
+    #[Test]
+    public function calcula_suavizacion_exponencial_con_tendencia_por_http(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+        $producto = $this->productoConHistorico();
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/pronosticos/calcular', [
+                'producto_id' => $producto->id,
+                'metodo' => 'suavizacion_exponencial_tendencia',
+                'alpha' => 0.95,
+                'beta' => 0.5,
+            ]);
+
+        $response->assertOk();
+        $this->assertEqualsWithDelta(5.6667, $response->json('data.metricas.mad'), 0.01);
+        $this->assertEqualsWithDelta(10.25, $response->json('data.metricas.mape'), 0.01);
+
+        $filas = $response->json('data.filas');
+        $this->assertEquals(67, end($filas)['pronostico']);
+    }
+
+    #[Test]
+    public function rechaza_suavizacion_exponencial_sin_alpha_ni_beta(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+        $producto = $this->productoConHistorico();
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/pronosticos/calcular', [
+                'producto_id' => $producto->id,
+                'metodo' => 'suavizacion_exponencial_tendencia',
+            ])
             ->assertStatus(422);
     }
 }
