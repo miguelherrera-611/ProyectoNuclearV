@@ -24,6 +24,7 @@ const METODOS = {
   promedio_movil_simple: 'Promedio móvil simple',
   promedio_movil_ponderado: 'Promedio móvil ponderado',
   suavizamiento_exponencial: 'Suavizamiento exponencial',
+  suavizacion_exponencial_tendencia: 'Suavización exponencial con tendencia (Holt)',
 }
 
 const inputClase =
@@ -41,6 +42,9 @@ export default function PronosticoPage() {
   const [pesos, setPesos] = useState(['0.4', '0.6'])
   const [alpha, setAlpha] = useState('0.45')
   const [pronosticoInicial, setPronosticoInicial] = useState('')
+  // Holt lleva su propio α para no pisar el del suavizamiento simple.
+  const [alphaHolt, setAlphaHolt] = useState(0.5)
+  const [beta, setBeta] = useState(0.5)
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState('')
   const [calculando, setCalculando] = useState(false)
@@ -69,6 +73,7 @@ export default function PronosticoPage() {
         alpha: Number(alpha),
         pronostico_inicial: pronosticoInicial === '' ? null : Number(pronosticoInicial),
       },
+      suavizacion_exponencial_tendencia: { alpha: Number(alphaHolt), beta: Number(beta) },
     }[metodo]
 
     setCalculando(true)
@@ -229,6 +234,41 @@ export default function PronosticoPage() {
                 value={pronosticoInicial}
                 onChange={(e) => setPronosticoInicial(e.target.value)}
                 className={`w-32 ${inputClase}`}
+              />
+            </div>
+          </>
+        )}
+
+        {metodo === 'suavizacion_exponencial_tendencia' && (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha-holt">
+                α (nivel)
+              </label>
+              <input
+                id="alpha-holt"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value={alphaHolt}
+                onChange={(e) => setAlphaHolt(e.target.value)}
+                className={`w-24 ${inputClase}`}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="beta">
+                β (tendencia)
+              </label>
+              <input
+                id="beta"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value={beta}
+                onChange={(e) => setBeta(e.target.value)}
+                className={`w-24 ${inputClase}`}
               />
             </div>
           </>

@@ -70,7 +70,7 @@ export const api = {
   },
 
   pronosticos: {
-    // body = { producto_id, metodo, ...parámetros del método } (n, pesos, alpha...)
+    // body = { producto_id, metodo, ...parámetros del método } (n, pesos, alpha, beta...)
     calcular: (token, body) => request('/api/pronosticos/calcular', { method: 'POST', body, token }),
   },
 }
