@@ -16,9 +16,12 @@ export function AuthProvider({ children }) {
 
   async function verifyTwoFactor(challengeToken, code) {
     const data = await api.verifyTwoFactor(challengeToken, code)
+    // El endpoint de 2FA solo entrega el token (responsabilidad única);
+    // quién es el usuario se pide aparte con el token recién obtenido.
+    const user = await api.me(data.token)
     setToken(data.token)
-    setUser(data.user)
-    return data
+    setUser(user)
+    return { ...data, user }
   }
 
   async function logout() {
