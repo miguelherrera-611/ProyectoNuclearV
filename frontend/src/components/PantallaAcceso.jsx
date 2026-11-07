@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 // Fondo del inicio de sesión y la verificación 2FA (guía, sección 7): oscuro
 // e inmersivo, siempre en modo oscuro sin importar la preferencia del
 // usuario (la clase "dark" de este contenedor cambia los tokens).
@@ -18,7 +20,7 @@ export default function PantallaAcceso({ children }) {
           </p>
         </div>
 
-        <div className="w-full max-w-md justify-self-center md:justify-self-end">{children}</div>
+        <div className="w-full max-w-md justify-self-center">{children}</div>
       </div>
     </div>
   )
@@ -52,19 +54,38 @@ function Anillos() {
 }
 
 // Campos del acceso: línea blanca fina y texto blanco (guía, sección 7).
-export function CampoAcceso({ id, etiqueta, error, ...props }) {
+// Si type="password", agrega solo un botón de texto para mostrar/ocultar
+// (sin ícono nuevo: el patrón ya establecido en el resto del sistema es
+// texto/símbolos planos, no SVG a la medida salvo el logo de marca).
+export function CampoAcceso({ id, etiqueta, error, type, ...props }) {
+  const esContrasena = type === 'password'
+  const [mostrar, setMostrar] = useState(false)
+
   return (
     <div className="mb-5">
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-texto">
         {etiqueta}
       </label>
-      <input
-        id={id}
-        aria-invalid={error ? 'true' : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className="block min-h-11 w-full border-0 border-b border-texto bg-transparent px-0 py-2 text-base text-texto placeholder:text-texto-sec focus:border-cian focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cian"
-        {...props}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type={esContrasena ? (mostrar ? 'text' : 'password') : type}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={`block min-h-11 w-full border-0 border-b border-texto bg-transparent px-0 py-2 text-base text-texto placeholder:text-texto-sec focus:border-cian focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cian ${esContrasena ? 'pr-20' : ''}`}
+          {...props}
+        />
+        {esContrasena && (
+          <button
+            type="button"
+            onClick={() => setMostrar((actual) => !actual)}
+            aria-pressed={mostrar}
+            className="absolute inset-y-0 right-0 inline-flex items-center text-sm font-medium text-texto-sec underline-offset-4 hover:text-texto hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cian"
+          >
+            {mostrar ? 'Ocultar' : 'Mostrar'}
+          </button>
+        )}
+      </div>
       {error && (
         <p id={`${id}-error`} className="mt-2 flex items-start gap-2 text-sm text-texto">
           <span aria-hidden="true" className="inline-flex size-5 shrink-0 items-center justify-center bg-error text-xs font-bold text-sobre-estado">

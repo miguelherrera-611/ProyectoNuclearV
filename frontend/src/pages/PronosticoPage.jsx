@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import Desplegable from '../components/Desplegable'
 import GraficoLineas from '../components/GraficoLineas'
 import { EncabezadoReporte, PieReporte } from '../components/Reporte'
-import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Selector, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { formatearNumero, formatearPeriodo, formatearPorcentaje, formatearUnidades } from '../format'
 import { colorDeProducto } from '../tema/colores'
 import { useTema } from '../tema/TemaContext'
@@ -125,31 +126,24 @@ export default function PronosticoPage() {
           <form onSubmit={handleCalcular}>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Campo id="producto" etiqueta="Producto" className="sm:col-span-2 lg:col-span-2">
-                <Selector id="producto" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
-                  <option value="">Selecciona…</option>
-                  {productos.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}
-                    </option>
-                  ))}
-                </Selector>
+                <Desplegable
+                  id="producto"
+                  value={productoId}
+                  onChange={setProductoId}
+                  opciones={productos.map((p) => ({ valor: String(p.id), etiqueta: p.nombre }))}
+                />
               </Campo>
 
               <Campo id="metodo" etiqueta="Método" className="sm:col-span-2 lg:col-span-2">
-                <Selector
+                <Desplegable
                   id="metodo"
                   value={metodo}
-                  onChange={(e) => {
-                    setMetodo(e.target.value)
+                  onChange={(valor) => {
+                    setMetodo(valor)
                     setResultado(null)
                   }}
-                >
-                  {Object.entries(METODOS).map(([clave, nombre]) => (
-                    <option key={clave} value={clave}>
-                      {nombre}
-                    </option>
-                  ))}
-                </Selector>
+                  opciones={Object.entries(METODOS).map(([clave, nombre]) => ({ valor: clave, etiqueta: nombre }))}
+                />
               </Campo>
 
               {metodo === 'promedio_movil_simple' && (
