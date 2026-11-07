@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import PantallaAcceso, { CampoAcceso } from '../components/PantallaAcceso'
+import { Aviso, BarraCarga, Boton } from '../components/ui'
 
 export default function TwoFactorPage({ challengeToken, devCode, onBack, onVerified }) {
   const { verifyTwoFactor } = useAuth()
@@ -28,59 +30,45 @@ export default function TwoFactorPage({ challengeToken, devCode, onBack, onVerif
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
-      >
-        <h1 className="mb-2 text-xl font-semibold text-slate-900">Verifica tu identidad</h1>
-        <p className="mb-6 text-sm text-slate-500">
+    <PantallaAcceso>
+      <form onSubmit={handleSubmit} noValidate>
+        <h1 className="mb-3 font-display text-3xl font-bold sm:text-4xl">Verifica tu identidad</h1>
+        <p className="mb-8 text-texto-sec">
           Te enviamos un código de 6 dígitos por correo. Ingrésalo para continuar.
         </p>
 
         {/* Solo llega devCode si el backend está en modo desarrollo sin
             Brevo configurado; en producción nunca aparece. */}
         {devCode && (
-          <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <Aviso tipo="alerta" className="mb-6">
             Modo desarrollo (todavía sin Brevo configurado): tu código es <strong>{devCode}</strong>.
-          </p>
+          </Aviso>
         )}
 
-        {error && (
-          <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
-        )}
+        {error && <Aviso className="mb-6">{error}</Aviso>}
 
-        <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="code">
-          Código
-        </label>
-        <input
+        <CampoAcceso
           id="code"
+          etiqueta="Código"
           type="text"
           inputMode="numeric"
           maxLength={6}
           autoComplete="one-time-code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="mb-1 w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest focus:border-slate-500 focus:outline-none"
+          style={{ letterSpacing: '0.5em' }}
         />
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-4 w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? 'Verificando...' : 'Verificar'}
-        </button>
+        <Boton type="submit" disabled={submitting} className="mt-4 w-full uppercase tracking-wide">
+          Verificar
+        </Boton>
+        {submitting && <BarraCarga etiqueta="Verificando código…" />}
 
         {/* No hay reenvío de código — solo volver a hacer login pide uno nuevo. */}
-        <button
-          type="button"
-          onClick={onBack}
-          className="mt-3 w-full rounded-md px-4 py-2 text-sm font-medium text-slate-500 transition hover:text-slate-700"
-        >
+        <Boton variante="texto" onClick={onBack} className="mt-3 w-full">
           Volver
-        </button>
+        </Boton>
       </form>
-    </div>
+    </PantallaAcceso>
   )
 }

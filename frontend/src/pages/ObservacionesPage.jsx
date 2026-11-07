@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
-import { formatearNumero, formatearPeriodo } from '../format'
+import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { formatearPeriodo, formatearUnidades } from '../format'
+
+const ESTILO_ENLACE_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
 
 export default function ObservacionesPage() {
   const { id } = useParams()
   const { token, user } = useAuth()
   const esAdministrador = user?.role === 'administrador'
 
+  const [producto, setProducto] = useState(null)
   const [observaciones, setObservaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -32,6 +36,10 @@ export default function ObservacionesPage() {
 
   useEffect(() => {
     cargar()
+    api.productos
+      .listar(token)
+      .then((lista) => setProducto(lista.find((p) => String(p.id) === String(id)) ?? null))
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
@@ -71,110 +79,107 @@ export default function ObservacionesPage() {
     }
   }
 
+  const total = observaciones.reduce((suma, o) => suma + Number(o.cantidad), 0)
+  const promedio = observaciones.length > 0 ? total / observaciones.length : null
+
   return (
     <div>
-      <Link to="/productos" className="mb-4 inline-block text-sm text-slate-500 hover:underline">
+      <Link to="/productos" className={`mb-4 inline-flex min-h-11 items-center text-sm text-texto-sec hover:underline ${ESTILO_ENLACE_FOCO}`}>
         ← Volver a productos
       </Link>
 
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Datos históricos</h1>
-
-      {error && <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-
-      {esAdministrador && (
-        <form
-          onSubmit={handleCapturar}
-          className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4"
-        >
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="mes">
-              Mes
-            </label>
-            <input
-              id="mes"
-              type="month"
-              value={mes}
-              onChange={(e) => setMes(e.target.value)}
-              className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="cantidad">
-              Demanda (unidades)
-            </label>
-            <input
-              id="cantidad"
-              type="number"
-              min="0"
-              value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
-              className="w-40 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={enviando}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+      <Titulo
+        subtitulo={producto?.nombre}
+        acciones={
+          // Un solo botón principal por pantalla: si el administrador tiene el
+          // formulario de captura, este pasa a secundario.
+          <Link
+            to={`/pronostico?producto=${id}`}
+            className={`inline-flex min-h-11 items-center justify-center px-5 py-2 font-display text-sm font-bold ${
+              esAdministrador
+                ? 'border border-campo text-texto hover:border-texto'
+                : 'bg-principal text-sobre-principal hover:bg-principal-hover'
+            } ${ESTILO_ENLACE_FOCO}`}
           >
-            {enviando ? 'Guardando...' : 'Capturar'}
-          </button>
-          {errorForm && <p className="w-full text-sm text-red-600">{errorForm}</p>}
-        </form>
+            Calcular pronóstico con estos datos →
+          </Link>
+        }
+      >
+        Datos históricos
+      </Titulo>
+
+      {error && <Aviso className="mb-6">{error}</Aviso>}
+
+      {observaciones.length > 0 && (
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <Kpi etiqueta="Periodos" valor={observaciones.length} />
+          <Kpi etiqueta="Total" valor={formatearUnidades(total)} />
+          <Kpi etiqueta="Promedio mensual" valor={formatearUnidades(promedio)} />
+        </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-slate-500">
+      {esAdministrador && (
+        <Tarjeta className="mb-6 p-4 sm:p-6">
+          <h2 className="mb-4 font-display text-lg font-bold">Capturar o corregir un mes</h2>
+          <form onSubmit={handleCapturar} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+            <Campo id="mes" etiqueta="Mes">
+              <Entrada id="mes" type="month" value={mes} onChange={(e) => setMes(e.target.value)} />
+            </Campo>
+            <Campo id="cantidad" etiqueta="Demanda (u)">
+              <Entrada
+                id="cantidad"
+                type="number"
+                min="0"
+                inputMode="numeric"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+              />
+            </Campo>
+            <Boton type="submit" disabled={enviando} className="w-full sm:w-auto">
+              {enviando ? 'Guardando…' : 'Guardar'}
+            </Boton>
+          </form>
+          {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
+        </Tarjeta>
+      )}
+
+      {cargando && <BarraCarga etiqueta="Cargando datos…" />}
+
+      {!cargando && observaciones.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">Todavía no hay periodos capturados para este producto.</Tarjeta>
+      )}
+
+      {!cargando && observaciones.length > 0 && (
+        <Tabla etiqueta="Datos históricos">
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-medium">Periodo</th>
-              <th className="px-4 py-3 font-medium">Demanda</th>
-              {esAdministrador && <th className="px-4 py-3 font-medium">Acciones</th>}
+              <Th>Periodo</Th>
+              <Th numero>Demanda</Th>
+              {esAdministrador && <Th className="text-right">Acciones</Th>}
             </tr>
           </thead>
           <tbody>
-            {cargando && (
-              <tr>
-                <td className="px-4 py-3 text-slate-400" colSpan={3}>
-                  Cargando...
-                </td>
-              </tr>
-            )}
-
-            {!cargando && observaciones.length === 0 && (
-              <tr>
-                <td className="px-4 py-3 text-slate-400" colSpan={3}>
-                  Todavía no hay periodos capturados para este producto.
-                </td>
-              </tr>
-            )}
-
             {observaciones.map((o) => (
-              <tr key={o.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3 text-slate-700 capitalize">{formatearPeriodo(o.periodo)}</td>
-                <td className="px-4 py-3 text-slate-700">{formatearNumero(o.cantidad, 0)}</td>
+              <Fila key={o.id}>
+                <Td>{formatearPeriodo(o.periodo)}</Td>
+                <Td numero>{formatearUnidades(o.cantidad)}</Td>
                 {esAdministrador && (
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
+                  <Td className="text-right">
+                    <Boton
+                      variante="texto"
+                      className="min-h-0 px-0 py-0"
                       onClick={() => handleEliminar(o.id)}
-                      className="text-red-600 hover:underline"
+                      aria-label={`Eliminar ${formatearPeriodo(o.periodo)}`}
                     >
                       Eliminar
-                    </button>
-                  </td>
+                    </Boton>
+                  </Td>
                 )}
-              </tr>
+              </Fila>
             ))}
           </tbody>
-        </table>
-      </div>
-
-      <Link
-        to={`/pronostico?producto=${id}`}
-        className="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-      >
-        Calcular pronóstico con estos datos →
-      </Link>
+        </Tabla>
+      )}
     </div>
   )
 }

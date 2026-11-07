@@ -1,24 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
-import { formatearNumero, formatearPeriodo, formatearPorcentaje } from '../format'
-
-// Colores de la paleta categórica validada (ver skill dataviz): slot 1 azul
-// para la demanda real, slot 2 naranja para el pronóstico — el par con
-// mejor separación (CVD y visión normal) entre los disponibles.
-const COLOR_REAL = '#2a78d6'
-const COLOR_PRONOSTICO = '#eb6834'
+import GraficoLineas from '../components/GraficoLineas'
+import { EncabezadoReporte, PieReporte } from '../components/Reporte'
+import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Selector, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { formatearNumero, formatearPeriodo, formatearPorcentaje, formatearUnidades } from '../format'
+import { colorDeProducto } from '../tema/colores'
+import { useTema } from '../tema/TemaContext'
 
 const METODOS = {
   promedio_movil_simple: 'Promedio móvil simple',
@@ -27,11 +16,9 @@ const METODOS = {
   suavizacion_exponencial_tendencia: 'Suavización exponencial con tendencia (Holt)',
 }
 
-const inputClase =
-  'rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none'
-
 export default function PronosticoPage() {
   const { token } = useAuth()
+  const { tema, imprimirReporte } = useTema()
   const [searchParams] = useSearchParams()
 
   const [productos, setProductos] = useState([])
@@ -46,6 +33,9 @@ export default function PronosticoPage() {
   const [alphaHolt, setAlphaHolt] = useState(0.5)
   const [beta, setBeta] = useState(0.5)
   const [resultado, setResultado] = useState(null)
+  // Producto y método del resultado mostrado (no los del formulario, que el
+  // usuario puede cambiar después de calcular).
+  const [calculado, setCalculado] = useState(null)
   const [error, setError] = useState('')
   const [calculando, setCalculando] = useState(false)
 
@@ -80,6 +70,7 @@ export default function PronosticoPage() {
     try {
       const data = await api.pronosticos.calcular(token, { producto_id: productoId, metodo, ...parametros })
       setResultado(data)
+      setCalculado({ productoId, metodo })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -96,6 +87,10 @@ export default function PronosticoPage() {
   const sumaPesos = pesos.reduce((suma, p) => suma + (Number(p) || 0), 0)
   const pesosSumanUno = Math.abs(sumaPesos - 1) <= 0.0001
 
+  const productoCalculado = productos.find((p) => String(p.id) === String(calculado?.productoId))
+  const colorProducto = calculado ? colorDeProducto(productos, calculado.productoId, tema) : null
+  const siguiente = resultado?.filas.at(-1)
+
   const datosGrafico = resultado?.filas.map((f) => ({
     periodo: formatearPeriodo(f.periodo),
     real: f.real,
@@ -104,266 +99,229 @@ export default function PronosticoPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Pronóstico — {METODOS[metodo]}</h1>
+      <EncabezadoReporte
+        subtitulo={
+          resultado && productoCalculado
+            ? `${productoCalculado.nombre} · ${METODOS[calculado.metodo]} · Horizonte 1 mes`
+            : null
+        }
+      />
 
-      <form
-        onSubmit={handleCalcular}
-        className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4"
-      >
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="producto">
-            Producto
-          </label>
-          <select
-            id="producto"
-            value={productoId}
-            onChange={(e) => setProductoId(e.target.value)}
-            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-          >
-            <option value="">Selecciona...</option>
-            {productos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="metodo">
-            Método
-          </label>
-          <select
-            id="metodo"
-            value={metodo}
-            onChange={(e) => {
-              setMetodo(e.target.value)
-              setResultado(null)
-            }}
-            className={inputClase}
-          >
-            {Object.entries(METODOS).map(([clave, nombre]) => (
-              <option key={clave} value={clave}>
-                {nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {metodo === 'promedio_movil_simple' && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n">
-              n (periodos)
-            </label>
-            <input
-              id="n"
-              type="number"
-              min="2"
-              value={n}
-              onChange={(e) => setN(e.target.value)}
-              className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-            />
-          </div>
-        )}
-
-        {metodo === 'promedio_movil_ponderado' && (
-          <>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n-pesos">
-                n (periodos)
-              </label>
-              <input
-                id="n-pesos"
-                type="number"
-                min="2"
-                value={pesos.length}
-                onChange={(e) => cambiarCantidadDePesos(e.target.value)}
-                className={`w-24 ${inputClase}`}
-              />
-            </div>
-            {pesos.map((peso, i) => (
-              <div key={i}>
-                <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor={`peso-${i}`}>
-                  w{i + 1} {i === 0 ? '(más reciente)' : `(t−${i + 1})`}
-                </label>
-                <input
-                  id={`peso-${i}`}
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={peso}
-                  onChange={(e) => setPesos((actuales) => actuales.map((p, j) => (j === i ? e.target.value : p)))}
-                  className={`w-24 ${inputClase}`}
-                />
-              </div>
-            ))}
-            <p className={`pb-2 text-sm ${pesosSumanUno ? 'text-slate-500' : 'text-red-700'}`}>
-              Suma: {formatearNumero(sumaPesos)}
-              {!pesosSumanUno && ' — debe ser 1'}
-            </p>
-          </>
-        )}
-
-        {metodo === 'suavizamiento_exponencial' && (
-          <>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha">
-                α (0–1)
-              </label>
-              <input
-                id="alpha"
-                type="number"
-                min="0.01"
-                max="1"
-                step="0.01"
-                value={alpha}
-                onChange={(e) => setAlpha(e.target.value)}
-                className={`w-24 ${inputClase}`}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="pronostico-inicial">
-                Pronóstico inicial
-              </label>
-              <input
-                id="pronostico-inicial"
-                type="number"
-                min="0"
-                placeholder="Primer dato"
-                value={pronosticoInicial}
-                onChange={(e) => setPronosticoInicial(e.target.value)}
-                className={`w-32 ${inputClase}`}
-              />
-            </div>
-          </>
-        )}
-
-        {metodo === 'suavizacion_exponencial_tendencia' && (
-          <>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha-holt">
-                α (nivel)
-              </label>
-              <input
-                id="alpha-holt"
-                type="number"
-                min="0.01"
-                max="1"
-                step="0.01"
-                value={alphaHolt}
-                onChange={(e) => setAlphaHolt(e.target.value)}
-                className={`w-24 ${inputClase}`}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="beta">
-                β (tendencia)
-              </label>
-              <input
-                id="beta"
-                type="number"
-                min="0.01"
-                max="1"
-                step="0.01"
-                value={beta}
-                onChange={(e) => setBeta(e.target.value)}
-                className={`w-24 ${inputClase}`}
-              />
-            </div>
-          </>
-        )}
-
-        <button
-          type="submit"
-          disabled={calculando}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+      <div className="print:hidden">
+        <Titulo
+          subtitulo="Elige un producto y un método para comparar la demanda real con el pronóstico."
+          acciones={
+            resultado && (
+              <Boton variante="secundario" onClick={imprimirReporte}>
+                Exportar reporte
+              </Boton>
+            )
+          }
         >
-          {calculando ? 'Calculando...' : 'Calcular'}
-        </button>
-      </form>
+          Pronóstico
+        </Titulo>
 
-      {error && <p className="mb-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        <Tarjeta className="mb-6 p-4 sm:p-6">
+          <form onSubmit={handleCalcular}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Campo id="producto" etiqueta="Producto" className="sm:col-span-2 lg:col-span-2">
+                <Selector id="producto" value={productoId} onChange={(e) => setProductoId(e.target.value)}>
+                  <option value="">Selecciona…</option>
+                  {productos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </Selector>
+              </Campo>
+
+              <Campo id="metodo" etiqueta="Método" className="sm:col-span-2 lg:col-span-2">
+                <Selector
+                  id="metodo"
+                  value={metodo}
+                  onChange={(e) => {
+                    setMetodo(e.target.value)
+                    setResultado(null)
+                  }}
+                >
+                  {Object.entries(METODOS).map(([clave, nombre]) => (
+                    <option key={clave} value={clave}>
+                      {nombre}
+                    </option>
+                  ))}
+                </Selector>
+              </Campo>
+
+              {metodo === 'promedio_movil_simple' && (
+                <Campo id="n" etiqueta="n (periodos)">
+                  <Entrada id="n" type="number" min="2" inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} />
+                </Campo>
+              )}
+
+              {metodo === 'promedio_movil_ponderado' && (
+                <>
+                  <Campo id="n-pesos" etiqueta="n (periodos)">
+                    <Entrada
+                      id="n-pesos"
+                      type="number"
+                      min="2"
+                      inputMode="numeric"
+                      value={pesos.length}
+                      onChange={(e) => cambiarCantidadDePesos(e.target.value)}
+                    />
+                  </Campo>
+                  {pesos.map((peso, i) => (
+                    <Campo key={i} id={`peso-${i}`} etiqueta={`w${i + 1} ${i === 0 ? '(más reciente)' : `(t−${i + 1})`}`}>
+                      <Entrada
+                        id={`peso-${i}`}
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={peso}
+                        onChange={(e) => setPesos((actuales) => actuales.map((p, j) => (j === i ? e.target.value : p)))}
+                      />
+                    </Campo>
+                  ))}
+                  <div className="sm:col-span-2 lg:col-span-4">
+                    {pesosSumanUno ? (
+                      <p className="text-sm text-texto-sec">Suma de los pesos: {formatearNumero(sumaPesos)}</p>
+                    ) : (
+                      <Aviso tipo="alerta">Los pesos suman {formatearNumero(sumaPesos)} y deben sumar 1.</Aviso>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {metodo === 'suavizamiento_exponencial' && (
+                <>
+                  <Campo id="alpha" etiqueta="α (0–1)">
+                    <Entrada
+                      id="alpha"
+                      type="number"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={alpha}
+                      onChange={(e) => setAlpha(e.target.value)}
+                    />
+                  </Campo>
+                  <Campo id="pronostico-inicial" etiqueta="Pronóstico inicial (u)" ayuda="Vacío = primer dato real">
+                    <Entrada
+                      id="pronostico-inicial"
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      value={pronosticoInicial}
+                      onChange={(e) => setPronosticoInicial(e.target.value)}
+                    />
+                  </Campo>
+                </>
+              )}
+
+              {metodo === 'suavizacion_exponencial_tendencia' && (
+                <>
+                  <Campo id="alpha-holt" etiqueta="α (nivel)">
+                    <Entrada
+                      id="alpha-holt"
+                      type="number"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={alphaHolt}
+                      onChange={(e) => setAlphaHolt(e.target.value)}
+                    />
+                  </Campo>
+                  <Campo id="beta" etiqueta="β (tendencia)">
+                    <Entrada
+                      id="beta"
+                      type="number"
+                      min="0.01"
+                      max="1"
+                      step="0.01"
+                      inputMode="decimal"
+                      value={beta}
+                      onChange={(e) => setBeta(e.target.value)}
+                    />
+                  </Campo>
+                </>
+              )}
+            </div>
+
+            <Boton type="submit" disabled={calculando} className="mt-6 w-full sm:w-auto">
+              {calculando ? 'Calculando…' : 'Calcular pronóstico'}
+            </Boton>
+            {calculando && <BarraCarga etiqueta="Calculando…" />}
+          </form>
+        </Tarjeta>
+
+        {error && <Aviso className="mb-6">{error}</Aviso>}
+      </div>
 
       {resultado && (
         <>
-          <div className="mb-6 h-80 rounded-xl border border-slate-200 bg-white p-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={datosGrafico}>
-                <CartesianGrid stroke="#e1e0d9" strokeWidth={1} vertical={false} />
-                <XAxis dataKey="periodo" tick={{ fill: '#898781', fontSize: 12 }} axisLine={{ stroke: '#c3c2b7' }} />
-                <YAxis tick={{ fill: '#898781', fontSize: 12 }} axisLine={{ stroke: '#c3c2b7' }} />
-                <Tooltip contentStyle={{ fontSize: 13 }} />
-                <Legend wrapperStyle={{ fontSize: 13 }} />
-                <Line
-                  type="monotone"
-                  dataKey="real"
-                  name="Demanda real"
-                  stroke={COLOR_REAL}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: COLOR_REAL }}
-                  connectNulls
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pronostico"
-                  name="Pronóstico"
-                  stroke={COLOR_PRONOSTICO}
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: COLOR_PRONOSTICO }}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="mb-6 grid gap-4 lg:grid-cols-3">
+            <Kpi etiqueta="Unidades proyectadas" valor={formatearUnidades(siguiente?.pronostico)}>
+              <p className="mt-3 text-sm text-texto-sec">{siguiente && formatearPeriodo(siguiente.periodo)}</p>
+            </Kpi>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-2 lg:grid-cols-3">
+              <Kpi compacto etiqueta="MAD" valor={formatearUnidades(resultado.metricas.mad, 2)} />
+              <Kpi compacto etiqueta="MSE" valor={formatearNumero(resultado.metricas.mse)} />
+              <Kpi compacto etiqueta="MAPE" valor={formatearPorcentaje(resultado.metricas.mape)} />
+              <Kpi compacto etiqueta="RSFE" valor={formatearUnidades(resultado.metricas.rsfe, 2)} />
+              <Kpi compacto etiqueta="Señal de rastreo" valor={formatearNumero(resultado.metricas.senal_rastreo)} />
+              <Kpi compacto etiqueta="Periodos evaluados" valor={resultado.metricas.n_periodos_evaluados} />
+            </div>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <Metrica label="MAD" valor={formatearNumero(resultado.metricas.mad)} />
-            <Metrica label="MSE" valor={formatearNumero(resultado.metricas.mse)} />
-            <Metrica label="MAPE" valor={formatearPorcentaje(resultado.metricas.mape)} />
-            <Metrica label="RSFE" valor={formatearNumero(resultado.metricas.rsfe)} />
-            <Metrica label="Señal de rastreo" valor={formatearNumero(resultado.metricas.senal_rastreo)} />
-          </div>
+          <Tarjeta className="mb-6 p-3 sm:p-6">
+            <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda real vs. pronóstico</h2>
+            <p className="mb-4 px-1 text-sm text-texto-sec">
+              {productoCalculado?.nombre} · {METODOS[calculado.metodo]}
+            </p>
+            <GraficoLineas
+              descripcion={`Demanda real y pronóstico de ${productoCalculado?.nombre ?? 'el producto'}`}
+              datos={datosGrafico}
+              series={[
+                { clave: 'real', nombre: 'Demanda real', etiqueta: 'Real', color: colorProducto },
+                { clave: 'pronostico', nombre: 'Pronóstico', etiqueta: 'Pronóstico', color: colorProducto, discontinua: true },
+              ]}
+            />
+          </Tarjeta>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Periodo</th>
-                  <th className="px-3 py-2 font-medium">D</th>
-                  <th className="px-3 py-2 font-medium">F</th>
-                  <th className="px-3 py-2 font-medium">E</th>
-                  <th className="px-3 py-2 font-medium">|E|</th>
-                  <th className="px-3 py-2 font-medium">E²</th>
-                  <th className="px-3 py-2 font-medium">|E|/D</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultado.filas.map((f, i) => (
-                  <tr key={i} className="border-b border-slate-100 text-slate-700 last:border-0">
-                    <td className="px-3 py-2 capitalize">{formatearPeriodo(f.periodo)}</td>
-                    <td className="px-3 py-2">{f.real === null ? '/' : formatearNumero(f.real, 0)}</td>
-                    <td className="px-3 py-2">{formatearNumero(f.pronostico)}</td>
-                    <td className="px-3 py-2">{formatearNumero(f.error)}</td>
-                    <td className="px-3 py-2">{formatearNumero(f.error_abs)}</td>
-                    <td className="px-3 py-2">{formatearNumero(f.error_cuadrado)}</td>
-                    <td className="px-3 py-2">{formatearPorcentaje(f.error_relativo !== null ? f.error_relativo * 100 : null)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Tabla etiqueta="Detalle del pronóstico por periodo">
+            <thead>
+              <tr>
+                <Th>Periodo</Th>
+                <Th numero>D</Th>
+                <Th numero>F</Th>
+                <Th numero>E</Th>
+                <Th numero>|E|</Th>
+                <Th numero>E²</Th>
+                <Th numero>|E|/D</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {resultado.filas.map((f, i) => (
+                <Fila key={i}>
+                  <Td className="whitespace-nowrap">{formatearPeriodo(f.periodo)}</Td>
+                  <Td numero>{formatearUnidades(f.real)}</Td>
+                  <Td numero>{formatearUnidades(f.pronostico, 2)}</Td>
+                  <Td numero>{formatearUnidades(f.error, 2)}</Td>
+                  <Td numero>{formatearUnidades(f.error_abs, 2)}</Td>
+                  <Td numero>{formatearNumero(f.error_cuadrado)}</Td>
+                  <Td numero>{formatearPorcentaje(f.error_relativo !== null ? f.error_relativo * 100 : null)}</Td>
+                </Fila>
+              ))}
+            </tbody>
+          </Tabla>
         </>
       )}
-    </div>
-  )
-}
 
-function Metrica({ label, valor }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{valor}</p>
+      <PieReporte />
     </div>
   )
 }
