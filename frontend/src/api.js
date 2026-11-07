@@ -70,8 +70,12 @@ export const api = {
   },
 
   pronosticos: {
-    calcular: (token, { producto_id, n }) =>
-      request('/api/pronosticos/calcular', { method: 'POST', body: { producto_id, n }, token }),
+    calcular: (token, { producto_id, metodo, n, alpha, beta }) =>
+      request('/api/pronosticos/calcular', {
+        method: 'POST',
+        body: { producto_id, metodo, n, alpha, beta },
+        token,
+      }),
   },
 }
 

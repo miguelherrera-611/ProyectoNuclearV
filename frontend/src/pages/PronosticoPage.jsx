@@ -20,13 +20,21 @@ import { formatearNumero, formatearPeriodo, formatearPorcentaje } from '../forma
 const COLOR_REAL = '#2a78d6'
 const COLOR_PRONOSTICO = '#eb6834'
 
+const METODOS = [
+  { valor: 'promedio_movil_simple', etiqueta: 'Promedio móvil simple' },
+  { valor: 'suavizacion_exponencial_tendencia', etiqueta: 'Suavización exponencial con tendencia (Holt)' },
+]
+
 export default function PronosticoPage() {
   const { token } = useAuth()
   const [searchParams] = useSearchParams()
 
   const [productos, setProductos] = useState([])
   const [productoId, setProductoId] = useState(searchParams.get('producto') ?? '')
+  const [metodo, setMetodo] = useState('promedio_movil_simple')
   const [n, setN] = useState(2)
+  const [alpha, setAlpha] = useState(0.5)
+  const [beta, setBeta] = useState(0.5)
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState('')
   const [calculando, setCalculando] = useState(false)
@@ -50,7 +58,12 @@ export default function PronosticoPage() {
 
     setCalculando(true)
     try {
-      const data = await api.pronosticos.calcular(token, { producto_id: productoId, n: Number(n) })
+      const params =
+        metodo === 'promedio_movil_simple'
+          ? { producto_id: productoId, metodo, n: Number(n) }
+          : { producto_id: productoId, metodo, alpha: Number(alpha), beta: Number(beta) }
+
+      const data = await api.pronosticos.calcular(token, params)
       setResultado(data)
     } catch (err) {
       setError(err.message)
@@ -67,7 +80,7 @@ export default function PronosticoPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Pronóstico — Promedio móvil simple</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900">Pronóstico</h1>
 
       <form
         onSubmit={handleCalcular}
@@ -93,18 +106,71 @@ export default function PronosticoPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n">
-            n (periodos)
+          <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="metodo">
+            Método
           </label>
-          <input
-            id="n"
-            type="number"
-            min="2"
-            value={n}
-            onChange={(e) => setN(e.target.value)}
-            className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-          />
+          <select
+            id="metodo"
+            value={metodo}
+            onChange={(e) => setMetodo(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          >
+            {METODOS.map((m) => (
+              <option key={m.valor} value={m.valor}>
+                {m.etiqueta}
+              </option>
+            ))}
+          </select>
         </div>
+
+        {metodo === 'promedio_movil_simple' ? (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="n">
+              n (periodos)
+            </label>
+            <input
+              id="n"
+              type="number"
+              min="2"
+              value={n}
+              onChange={(e) => setN(e.target.value)}
+              className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            />
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="alpha">
+                α (nivel)
+              </label>
+              <input
+                id="alpha"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value={alpha}
+                onChange={(e) => setAlpha(e.target.value)}
+                className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="beta">
+                β (tendencia)
+              </label>
+              <input
+                id="beta"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value={beta}
+                onChange={(e) => setBeta(e.target.value)}
+                className="w-24 rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+              />
+            </div>
+          </>
+        )}
 
         <button
           type="submit"
