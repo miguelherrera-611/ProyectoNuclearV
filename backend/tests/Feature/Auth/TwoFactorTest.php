@@ -20,9 +20,10 @@ class TwoFactorTest extends TestCase
             'code' => $challenge['code'],
         ]);
 
-        $response->assertOk()
-            ->assertJsonPath('data.user.email', $user->email)
-            ->assertJsonStructure(['data' => ['token', 'user' => ['id', 'name', 'email']]]);
+        // Responsabilidad única: este endpoint solo entrega el token, nunca
+        // datos del usuario — eso lo resuelve /api/auth/me aparte.
+        $response->assertOk()->assertJsonStructure(['data' => ['token']]);
+        $this->assertArrayNotHasKey('user', $response->json('data'));
 
         $token = $response->json('data.token');
         $this->withHeader('Authorization', "Bearer {$token}")

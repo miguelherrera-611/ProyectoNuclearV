@@ -99,10 +99,12 @@ class AuthController
             'user_id' => $user->id,
         ]);
 
+        // Solo el token: quién es el usuario lo resuelve el frontend
+        // llamando a GET /api/auth/me aparte — responsabilidad única, este
+        // endpoint solo autentica (igual que /token vs /userinfo en OAuth).
         return response()->json([
             'data' => [
                 'token' => $token,
-                'user' => new UserResource($user),
             ],
         ]);
     }
