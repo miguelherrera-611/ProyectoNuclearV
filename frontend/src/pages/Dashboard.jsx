@@ -17,6 +17,7 @@ const METODOS = [
   { metodo: 'promedio_movil_ponderado', nombre: 'Promedio móvil ponderado', parametros: { pesos: [0.4, 0.6] } },
   { metodo: 'suavizamiento_exponencial', nombre: 'Suavizamiento exponencial', parametros: { alpha: 0.45 } },
   { metodo: 'suavizacion_exponencial_tendencia', nombre: 'Holt', parametros: { alpha: 0.5, beta: 0.5 } },
+  { metodo: 'regresion_lineal', nombre: 'Regresión lineal', parametros: {} },
 ]
 
 // RF-39: la señal de rastreo fuera de ±4 indica que el modelo perdió validez.

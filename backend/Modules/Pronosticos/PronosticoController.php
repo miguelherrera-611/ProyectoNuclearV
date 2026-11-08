@@ -16,6 +16,7 @@ class PronosticoController
         'promedio_movil_ponderado' => PromedioMovilPonderado::class,
         'suavizamiento_exponencial' => SuavizamientoExponencial::class,
         'suavizacion_exponencial_tendencia' => SuavizacionExponencialTendencia::class,
+        'regresion_lineal' => RegresionLineal::class,
     ];
 
     public function calcular(Request $request)
@@ -44,6 +45,7 @@ class PronosticoController
                 'alpha' => ['required', 'numeric', 'gt:0', 'lte:1'],
                 'beta' => ['required', 'numeric', 'gt:0', 'lte:1'],
             ],
+            'regresion_lineal' => [],
         });
 
         $observaciones = Observacion::where('producto_id', $request->integer('producto_id'))
