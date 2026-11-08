@@ -15,6 +15,7 @@ const METODOS = {
   promedio_movil_ponderado: 'Promedio móvil ponderado',
   suavizamiento_exponencial: 'Suavizamiento exponencial',
   suavizacion_exponencial_tendencia: 'Suavización exponencial con tendencia (Holt)',
+  regresion_lineal: 'Regresión lineal',
 }
 
 export default function PronosticoPage() {
@@ -65,6 +66,7 @@ export default function PronosticoPage() {
         pronostico_inicial: pronosticoInicial === '' ? null : Number(pronosticoInicial),
       },
       suavizacion_exponencial_tendencia: { alpha: Number(alphaHolt), beta: Number(beta) },
+      regresion_lineal: {},
     }[metodo]
 
     setCalculando(true)
