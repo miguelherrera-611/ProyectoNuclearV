@@ -4,6 +4,7 @@ import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
 import Desplegable from '../components/Desplegable'
 import GraficoLineas from '../components/GraficoLineas'
+import ResultadoEstacional from '../components/ResultadoEstacional'
 import { EncabezadoReporte, PieReporte } from '../components/Reporte'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { formatearNumero, formatearPeriodo, formatearPorcentaje, formatearUnidades } from '../format'
@@ -16,6 +17,7 @@ const METODOS = {
   suavizamiento_exponencial: 'Suavizamiento exponencial',
   suavizacion_exponencial_tendencia: 'Suavización exponencial con tendencia (Holt)',
   regresion_lineal: 'Regresión lineal',
+  estacional_multiplicativo: 'Estacional multiplicativo',
 }
 
 export default function PronosticoPage() {
@@ -34,6 +36,7 @@ export default function PronosticoPage() {
   // Holt lleva su propio α para no pisar el del suavizamiento simple.
   const [alphaHolt, setAlphaHolt] = useState(0.5)
   const [beta, setBeta] = useState(0.5)
+  const [periodoCorteEstacional, setPeriodoCorteEstacional] = useState('2026-09')
   const [resultado, setResultado] = useState(null)
   // Producto y método del resultado mostrado (no los del formulario, que el
   // usuario puede cambiar después de calcular).
@@ -67,6 +70,7 @@ export default function PronosticoPage() {
       },
       suavizacion_exponencial_tendencia: { alpha: Number(alphaHolt), beta: Number(beta) },
       regresion_lineal: {},
+      estacional_multiplicativo: { periodo_corte: periodoCorteEstacional || null },
     }[metodo]
 
     setCalculando(true)
@@ -105,7 +109,7 @@ export default function PronosticoPage() {
       <EncabezadoReporte
         subtitulo={
           resultado && productoCalculado
-            ? `${productoCalculado.nombre} · ${METODOS[calculado.metodo]} · Horizonte 1 mes`
+            ? `${productoCalculado.nombre} · ${METODOS[calculado.metodo]} · ${resultado.estacional ? `Año ${resultado.estacional.anio_proyectado}` : 'Horizonte 1 mes'}`
             : null
         }
       />
@@ -151,6 +155,22 @@ export default function PronosticoPage() {
               {metodo === 'promedio_movil_simple' && (
                 <Campo id="n" etiqueta="n (periodos)">
                   <Entrada id="n" type="number" min="2" inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} />
+                </Campo>
+              )}
+
+              {metodo === 'estacional_multiplicativo' && (
+                <Campo
+                  id="periodo-corte-estacional"
+                  etiqueta="Último mes completo"
+                  ayuda="El Excel de comparación usa septiembre de 2026. Vacío utiliza todos los datos registrados."
+                  className="sm:col-span-2 lg:col-span-2"
+                >
+                  <Entrada
+                    id="periodo-corte-estacional"
+                    type="month"
+                    value={periodoCorteEstacional}
+                    onChange={(e) => setPeriodoCorteEstacional(e.target.value)}
+                  />
                 </Campo>
               )}
 
@@ -257,7 +277,11 @@ export default function PronosticoPage() {
         {error && <Aviso className="mb-6">{error}</Aviso>}
       </div>
 
-      {resultado && (
+      {resultado?.estacional && (
+        <ResultadoEstacional resultado={resultado} producto={productoCalculado} colorProducto={colorProducto} />
+      )}
+
+      {resultado && !resultado.estacional && (
         <>
           <div className="mb-6 grid gap-4 lg:grid-cols-3">
             <Kpi etiqueta="Unidades proyectadas" valor={formatearUnidades(siguiente?.pronostico)}>

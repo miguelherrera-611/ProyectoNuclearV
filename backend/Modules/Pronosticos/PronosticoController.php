@@ -17,6 +17,7 @@ class PronosticoController
         'suavizamiento_exponencial' => SuavizamientoExponencial::class,
         'suavizacion_exponencial_tendencia' => SuavizacionExponencialTendencia::class,
         'regresion_lineal' => RegresionLineal::class,
+        'estacional_multiplicativo' => EstacionalMultiplicativo::class,
     ];
 
     public function calcular(Request $request)
@@ -46,6 +47,9 @@ class PronosticoController
                 'beta' => ['required', 'numeric', 'gt:0', 'lte:1'],
             ],
             'regresion_lineal' => [],
+            'estacional_multiplicativo' => [
+                'periodo_corte' => ['nullable', 'date_format:Y-m'],
+            ],
         });
 
         $observaciones = Observacion::where('producto_id', $request->integer('producto_id'))
