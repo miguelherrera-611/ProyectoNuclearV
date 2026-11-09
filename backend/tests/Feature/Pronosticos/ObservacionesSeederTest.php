@@ -14,21 +14,25 @@ class ObservacionesSeederTest extends TestCase
     use RefreshDatabase;
 
     #[Test]
-    public function carga_los_34_meses_con_los_totales_de_los_excel_del_cliente(): void
+    public function carga_los_33_meses_con_los_totales_de_los_excel_del_cliente(): void
     {
         $this->seed(ObservacionesSeeder::class);
 
-        $esperados = ['MICO-ACEL-001' => 281380, 'MICO-CLUTCH-001' => 163331];
+        $esperados = [
+            'MICO-ACEL-001' => 278280,
+            'MICO-CLUTCH-HIERRO-001' => 614700,
+            'MICO-CLUTCH-001' => 161331,
+        ];
 
         foreach ($esperados as $codigo => $total) {
             $observaciones = Observacion::where('producto_id', Producto::where('codigo', $codigo)->value('id'))
                 ->orderBy('periodo')
                 ->get();
 
-            $this->assertCount(34, $observaciones);
+            $this->assertCount(33, $observaciones);
             $this->assertSame($total, (int) $observaciones->sum('cantidad'));
             $this->assertSame('2024-01-01', $observaciones->first()->periodo->toDateString());
-            $this->assertSame('2026-10-01', $observaciones->last()->periodo->toDateString());
+            $this->assertSame('2026-09-01', $observaciones->last()->periodo->toDateString());
         }
     }
 
@@ -38,6 +42,6 @@ class ObservacionesSeederTest extends TestCase
         $this->seed(ObservacionesSeeder::class);
         $this->seed(ObservacionesSeeder::class);
 
-        $this->assertSame(68, Observacion::count());
+        $this->assertSame(99, Observacion::count());
     }
 }
