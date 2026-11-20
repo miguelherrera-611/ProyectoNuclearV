@@ -99,7 +99,14 @@ jobs:
           script: |
             set -e
             cd "${{ secrets.APP_PATH }}/.."
-            git pull origin main
+            # fetch + reset --hard (no "git pull") a propósito: el servidor
+            # nunca debe tener cambios propios fuera de git — si alguna vez
+            # queda un archivo modificado a mano ahí (como pasó con
+            # ObservacionesSeeder.php), un "git pull" normal aborta el
+            # despliegue entero. Reset --hard garantiza que el servidor
+            # siempre termine siendo exactamente lo que dice el repositorio.
+            git fetch origin main
+            git reset --hard origin/main
             cd "${{ secrets.APP_PATH }}"
             composer install --no-interaction --no-dev --optimize-autoloader --no-scripts
             php artisan package:discover --ansi
