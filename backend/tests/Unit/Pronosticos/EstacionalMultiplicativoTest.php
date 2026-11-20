@@ -113,6 +113,25 @@ class EstacionalMultiplicativoTest extends TestCase
     }
 
     #[Test]
+    public function no_proyecta_demanda_negativa_cuando_el_ultimo_anio_cae_fuerte_frente_al_anterior(): void
+    {
+        // DEF-001 (Corte 2): una caída pronunciada entre años hacía que
+        // incremento_promedio superara en magnitud al total del último año,
+        // proyectando pronósticos negativos (demanda imposible) sin avisar.
+        $anio1 = array_fill(0, 12, 1000.0);
+        $observaciones = [...self::observaciones($anio1), ...self::observaciones([50.0])];
+        $observaciones[12]['periodo'] = '2025-01-01';
+
+        $resultado = (new EstacionalMultiplicativo)->calcular($observaciones, ['periodo_corte' => '2025-01']);
+
+        $this->assertSame(0.0, $resultado['estacional']['total_proyectado']);
+
+        foreach (array_slice($resultado['filas'], -12) as $fila) {
+            $this->assertSame(0.0, $fila['pronostico']);
+        }
+    }
+
+    #[Test]
     #[DataProvider('historicosInvalidos')]
     public function rechaza_historicos_que_no_permiten_calcular_indices(array $observaciones): void
     {

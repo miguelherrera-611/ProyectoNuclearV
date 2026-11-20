@@ -8,4 +8,12 @@ export default defineConfig(({ command }) => ({
   // Laravel sirve el build de producción desde public/app/ (mismo origen
   // que la API, sin CORS) — en desarrollo sigue sirviendo en la raíz.
   base: command === 'build' ? '/app/' : '/',
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
+    },
+  },
 }))

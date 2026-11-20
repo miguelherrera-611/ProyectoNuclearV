@@ -37,7 +37,9 @@ final class EstacionalMultiplicativo implements MetodoPronostico
         }
 
         $incrementoPromedio = array_sum($incrementos) / count($incrementos);
-        $totalProyectado = $totales[$ultimoAnio] + $incrementoPromedio;
+        // La demanda proyectada no puede ser negativa: una caída pronunciada entre años
+        // (incrementoPromedio muy negativo) no debe traducirse en pronósticos imposibles.
+        $totalProyectado = max(0.0, $totales[$ultimoAnio] + $incrementoPromedio);
         $promedioProyectado = $totalProyectado / self::MESES_POR_ANIO;
         $filas = [];
         $filasEvaluadas = [];

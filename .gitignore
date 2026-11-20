@@ -12,6 +12,7 @@
 /.zed
 /node_modules
 /backend/.phpunit.cache
+/backend/coverage
 /backend/auth.json
 /backend/public/build
 /backend/public/hot
