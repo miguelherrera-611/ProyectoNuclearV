@@ -1,136 +1,130 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useTema } from '../tema/TemaContext'
+import { IconoCerrarSesion, IconoChevronAbajo, IconoLuna, IconoMenu, IconoSol } from './Iconos'
+import Sidebar from './Sidebar'
+import { usePopover } from './usePopover'
 
-const ENLACES = [
-  { a: '/', texto: 'Inicio', exacto: true },
-  { a: '/productos', texto: 'Productos' },
-  { a: '/pronostico', texto: 'Pronóstico' },
-]
+const ESTILO_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
 
-const FOCO_BARRA = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cian'
+function iniciales(nombre) {
+  if (!nombre) return '?'
+  const partes = nombre.trim().split(/\s+/)
+  return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase()
+}
 
-// Barra superior compartida por todas las pantallas autenticadas — mismo
-// lugar, mismo comportamiento en cualquier sección. Según la guía (sección
-// 6): franja índigo con texto blanco en claro; tarjeta oscura con una línea
-// cian en oscuro. En pantallas angostas los enlaces van en un menú.
-export default function AppLayout({ children }) {
-  const { user, logout } = useAuth()
+// Un solo botón con los dos símbolos (el usuario ve de una qué modo activa
+// cada lado) en vez de un ícono que cambia solo — el lado activo se marca
+// con el color principal, nunca con un tono intermedio inventado.
+function InterruptorTema() {
   const { tema, alternarTema } = useTema()
+  const esOscuro = tema === 'oscuro'
+
+  return (
+    <button
+      type="button"
+      onClick={alternarTema}
+      aria-label={esOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      className={`flex items-center gap-0.5 rounded-full border border-campo p-1 ${ESTILO_FOCO}`}
+    >
+      <span className={`flex size-7 items-center justify-center rounded-full ${!esOscuro ? 'bg-principal text-sobre-principal' : 'text-texto-sec'}`}>
+        <IconoSol className="size-4" />
+      </span>
+      <span className={`flex size-7 items-center justify-center rounded-full ${esOscuro ? 'bg-principal text-sobre-principal' : 'text-texto-sec'}`}>
+        <IconoLuna className="size-4" />
+      </span>
+    </button>
+  )
+}
+
+function Perfil() {
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [menuAbierto, setMenuAbierto] = useState(false)
+  const { abierto, alternar, cerrar, refContenedor } = usePopover()
 
   async function handleLogout() {
+    cerrar()
     await logout()
     navigate('/', { replace: true })
   }
 
-  const textoTema = tema === 'oscuro' ? 'Modo claro' : 'Modo oscuro'
-
-  function claseEnlace({ isActive }) {
-    return `flex min-h-11 items-center border-b-4 px-1 text-sm font-medium ${FOCO_BARRA} ${
-      isActive ? 'border-cian text-barra-texto' : 'border-transparent text-barra-texto hover:border-barra-texto'
-    }`
-  }
-
   return (
-    <div className="flex min-h-screen flex-col bg-fondo text-texto">
-      <header className="border-b-2 border-barra-linea bg-barra text-barra-texto print:hidden">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-8">
-            <NavLink to="/" className={`py-3 font-display text-lg font-bold ${FOCO_BARRA}`}>
-              JR Forecast
-            </NavLink>
+    <div ref={refContenedor} className="relative">
+      <button
+        type="button"
+        onClick={alternar}
+        aria-haspopup="menu"
+        aria-expanded={abierto}
+        className={`flex min-h-11 items-center gap-2 rounded-lg px-2 hover:bg-texto/5 ${ESTILO_FOCO}`}
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-principal font-display text-sm font-bold text-sobre-principal">
+          {iniciales(user?.name)}
+        </span>
+        <span className="hidden text-left text-sm sm:block">
+          <span className="block font-medium text-texto">{user?.name}</span>
+          <span className="block text-xs capitalize text-texto-sec">{user?.role}</span>
+        </span>
+        <IconoChevronAbajo className={`size-4 shrink-0 text-texto-sec transition-transform ${abierto ? 'rotate-180' : ''}`} />
+      </button>
 
-            <nav aria-label="Principal" className="hidden items-stretch gap-6 self-stretch md:flex">
-              {ENLACES.map((e) => (
-                <NavLink key={e.a} to={e.a} end={e.exacto} className={claseEnlace}>
-                  {e.texto}
-                </NavLink>
-              ))}
-            </nav>
+      {abierto && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-10 mt-2 w-56 rounded-xl border border-borde bg-tarjeta p-2 shadow-lg"
+        >
+          <div className="border-b border-borde px-3 py-2 sm:hidden">
+            <p className="font-medium text-texto">{user?.name}</p>
+            <p className="text-xs capitalize text-texto-sec">{user?.role}</p>
           </div>
-
-          <div className="hidden items-center gap-2 text-sm md:flex">
-            <span className="mr-2 truncate">
-              {user?.name} · <span className="capitalize">{user?.role}</span>
-            </span>
-            <button
-              type="button"
-              onClick={alternarTema}
-              className={`min-h-11 px-3 font-medium hover:underline ${FOCO_BARRA}`}
-            >
-              {textoTema}
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className={`min-h-11 border border-barra-texto px-4 font-display font-bold ${FOCO_BARRA}`}
-            >
-              Cerrar sesión
-            </button>
-          </div>
-
           <button
             type="button"
-            onClick={() => setMenuAbierto((abierto) => !abierto)}
-            aria-expanded={menuAbierto}
-            aria-controls="menu-movil"
-            className={`flex min-h-11 items-center gap-2 px-2 text-sm font-medium md:hidden ${FOCO_BARRA}`}
+            role="menuitem"
+            onClick={handleLogout}
+            className={`mt-1 flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm font-medium text-texto hover:bg-texto/5 ${ESTILO_FOCO}`}
           >
-            <span aria-hidden="true" className="text-xl leading-none">
-              {menuAbierto ? '✕' : '☰'}
-            </span>
-            Menú
+            <IconoCerrarSesion className="size-5 text-texto-sec" />
+            Cerrar sesión
           </button>
         </div>
+      )}
+    </div>
+  )
+}
 
-        {menuAbierto && (
-          <div id="menu-movil" className="px-4 pb-4 md:hidden">
-            <nav aria-label="Principal" className="flex flex-col">
-              {ENLACES.map((e) => (
-                <NavLink
-                  key={e.a}
-                  to={e.a}
-                  end={e.exacto}
-                  onClick={() => setMenuAbierto(false)}
-                  className={({ isActive }) =>
-                    `flex min-h-12 items-center border-l-4 pl-3 text-base font-medium ${FOCO_BARRA} ${
-                      isActive ? 'border-cian' : 'border-transparent'
-                    }`
-                  }
-                >
-                  {e.texto}
-                </NavLink>
-              ))}
-            </nav>
-            <p className="mt-4 text-sm">
-              {user?.name} · <span className="capitalize">{user?.role}</span>
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={alternarTema}
-                className={`min-h-11 border border-barra-texto px-3 text-sm font-medium ${FOCO_BARRA}`}
-              >
-                {textoTema}
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={`min-h-11 border border-barra-texto px-3 font-display text-sm font-bold ${FOCO_BARRA}`}
-              >
-                Cerrar sesión
-              </button>
-            </div>
+// Columna (Sidebar) para navegar entre secciones + franja superior (solo
+// controles: abrir el menú en móvil, modo claro/oscuro y la cuenta) — antes
+// todo vivía apretado en una sola barra horizontal.
+export default function AppLayout({ children }) {
+  const [sidebarAbierto, setSidebarAbierto] = useState(false)
+
+  return (
+    <div className="flex min-h-screen bg-fondo text-texto">
+      <Sidebar abierto={sidebarAbierto} alCerrar={() => setSidebarAbierto(false)} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex min-h-16 items-center justify-between gap-4 border-b border-borde bg-tarjeta px-4 sm:px-6 print:hidden">
+          <button
+            type="button"
+            onClick={() => setSidebarAbierto(true)}
+            aria-label="Abrir menú"
+            className={`flex size-10 items-center justify-center rounded-lg text-texto hover:bg-texto/5 md:hidden ${ESTILO_FOCO}`}
+          >
+            <IconoMenu className="size-6" />
+          </button>
+
+          <span className="font-display text-base font-bold text-texto md:hidden">JR Forecast</span>
+
+          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            <InterruptorTema />
+            <Perfil />
           </div>
-        )}
-      </header>
+        </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10 print:max-w-none print:p-0">
-        {children}
-      </main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-10 print:max-w-none print:p-0">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }
