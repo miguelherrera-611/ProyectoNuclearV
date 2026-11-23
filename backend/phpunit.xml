@@ -20,6 +20,11 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Forzado explícito: las pruebas no deben depender de lo que haya
+             en el .env local de cada desarrollador (ver interruptor en
+             config/auth.php) — con 2FA desactivado ahí, este valor se filtra
+             igual y rompe LoginTest. -->
+        <env name="AUTH_TWO_FACTOR_ENABLED" value="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

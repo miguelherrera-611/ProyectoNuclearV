@@ -129,6 +129,6 @@ return [
     |
     */
 
-    'two_factor_enabled' => env('AUTH_TWO_FACTOR_ENABLED', false),
+    'two_factor_enabled' => env('AUTH_TWO_FACTOR_ENABLED', true),
 
 ];

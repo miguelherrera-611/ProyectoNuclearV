@@ -15,6 +15,7 @@
 | Versión | Fecha | Autor | Descripción |
 |---|---|---|---|
 | 1.0 | 2026-11-20 | [Equipo] | Versión inicial del informe (Corte 2) |
+| 1.1 | 2026-11-23 | [Equipo] | Se agregó el interruptor temporal de 2FA (`AUTH_TWO_FACTOR_ENABLED`) con su prueba dedicada; números de cobertura del backend actualizados (Secciones 2 y 3) |
 
 ## 1. Herramientas y versiones
 
@@ -38,15 +39,17 @@
 | Indicador | Valor |
 |---|---|
 | Pruebas unitarias ejecutadas (backend) | 37 (503 assertions) — algoritmos de pronóstico |
-| Pruebas de integración ejecutadas (backend) | 35 (146 assertions) — HTTP + base de datos: auth/2FA, roles, productos, observaciones, cálculo de pronóstico |
+| Pruebas de integración ejecutadas (backend) | 36 (156 assertions) — HTTP + base de datos: auth/2FA (incluye el interruptor `AUTH_TWO_FACTOR_ENABLED`), roles, productos, observaciones, cálculo de pronóstico |
 | Pruebas unitarias ejecutadas (frontend) | 11 — utilidades de formato (`format.js`) |
-| Total ejecutadas | 83 |
-| Aprobadas | 83 |
+| Total ejecutadas | 84 |
+| Aprobadas | 84 |
 | Fallidas | 0 |
 | Bloqueadas | 0 |
 | Omitidas en esta corrida | Pruebas E2E/rendimiento/seguridad dedicadas — no existen aún en el repositorio; se planifican para el Corte 3 |
 
 Comando usado: `composer test:coverage` (backend) y `npm run test:coverage` (frontend). Ver Anexo A.
+
+**Nueva funcionalidad probada en esta versión — interruptor temporal de 2FA:** se agregó la variable `AUTH_TWO_FACTOR_ENABLED` (`config/auth.php`) para poder desactivar el código por correo en producción sin necesidad de un nuevo despliegue (solo cambiando el `.env` del servidor y corriendo `php artisan config:clear`), y volver a activarlo de la misma forma. Por defecto queda **activado** (`true`) — es decir, si la variable no está definida en algún entorno, el 2FA sigue funcionando como siempre; hay que apagarlo explícitamente. La prueba `test_login_with_two_factor_disabled_returns_the_token_directly` cubre el camino con el interruptor en `false`: verifica que el login entrega el token directo, que no queda ningún código 2FA pendiente en el usuario, que el token funciona de verdad contra una ruta protegida, y que el evento queda auditado como `login_success_2fa_disabled` en `login_audits` (para no perder el rastro de que ese login salió sin verificación en dos pasos).
 
 ## 3. Cobertura de líneas y ramas por módulo
 
@@ -56,11 +59,13 @@ Comando usado: `composer test:coverage` (backend) y `npm run test:coverage` (fro
 
 | Módulo | Cobertura de líneas | Cobertura de métodos | ¿Cumple la meta? |
 |---|---|---|---|
-| Autenticación y roles (`Modules/Auth`) | 92,52 % (136/147) | 93,3 % (14/15) | Sí |
+| Autenticación y roles (`Modules/Auth`) | 93,29 % (153/164) | 93,3 % (14/15) | Sí |
 | Gestión de datos (`Modules/Productos` + captura de observaciones) | 70,91 % (39/55) | 58,3 % (7/12) | No — ver Sección 5 |
 | Pronóstico (`Modules/Pronosticos`, algoritmos + controlador) | 97,58 % (404/414) | 41,7 % (5/12)¹ | Sí (líneas) |
 | Indicadores y reportes | No aplica — el módulo vive enteramente en el frontend (React/Recharts), no hay backend propio | — | No — ver Sección 5 |
-| **Global backend** | **94,30 % (612/649)** | **68,29 % (28/41)** | **Sí (líneas)** |
+| **Global backend** | **94,38 % (621/658)** | **68,29 % (28/41)** | **Sí (líneas)** |
+
+Autenticación y roles subió de 92,52 % a 93,29 % tras agregar el interruptor de 2FA: el nuevo camino (`AuthController::login` con `two_factor_enabled` en `false`) quedó 100 % cubierto por su propia prueba.
 
 ¹ El % de métodos bajo en Pronóstico es un artefacto de cómo PHPUnit cuenta "método cubierto" en clases con un solo método público invocado indirectamente vía `app()->calcular()`; la cobertura de líneas real (97,58 %) refleja mejor el trabajo efectivamente probado.
 
@@ -106,7 +111,7 @@ CP-EST-NEG documenta un ciclo completo hallazgo → corrección → reverificaci
 
 ## 6. Conclusiones
 
-El backend cumple holgadamente la meta de cobertura de líneas (94,30 % global, con los tres módulos de cálculo —Auth, Productos y Pronóstico— todos por encima de la meta de 80 % salvo Gestión de datos, que queda en 70,91 % por caminos de "editar"/"listar" sin probar explícitamente). Los 10 casos de verificación numérica contra los Excel firmados por el cliente están APROBADOS, incluido un caso (CP-EST-NEG) que durante esta ronda reveló un defecto real —el pronóstico estacional podía proyectar demanda negativa— que se corrigió y volvió a verificar en el mismo corte. La brecha más importante no está en el backend sino en el **frontend**, que recién esta corrida obtuvo su primera infraestructura de pruebas (Vitest) y apenas cubre las utilidades puras; todo el dashboard de indicadores y reportes queda sin probar y es la prioridad para el Corte 3, junto con cerrar la cobertura de Gestión de datos y retomar el análisis estático de tipos una vez resuelto el bloqueo local del antivirus.
+El backend cumple holgadamente la meta de cobertura de líneas (94,38 % global, con los tres módulos de cálculo —Auth, Productos y Pronóstico— todos por encima de la meta de 80 % salvo Gestión de datos, que queda en 70,91 % por caminos de "editar"/"listar" sin probar explícitamente). Los 10 casos de verificación numérica contra los Excel firmados por el cliente están APROBADOS, incluido un caso (CP-EST-NEG) que durante esta ronda reveló un defecto real —el pronóstico estacional podía proyectar demanda negativa— que se corrigió y volvió a verificar en el mismo corte. La brecha más importante no está en el backend sino en el **frontend**, que recién esta corrida obtuvo su primera infraestructura de pruebas (Vitest) y apenas cubre las utilidades puras; todo el dashboard de indicadores y reportes queda sin probar y es la prioridad para el Corte 3, junto con cerrar la cobertura de Gestión de datos y retomar el análisis estático de tipos una vez resuelto el bloqueo local del antivirus. También se agregó un interruptor para desactivar el 2FA temporalmente en producción (pensado para soporte o demos, sin necesitar otro despliegue); se entregó con su propia prueba y con auditoría del evento, para que apagarlo no quede como un cambio silencioso sin rastro.
 
 ## Anexo A · Cómo generar el reporte de cobertura en este proyecto
 

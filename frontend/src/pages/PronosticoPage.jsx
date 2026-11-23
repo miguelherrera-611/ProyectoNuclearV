@@ -153,7 +153,12 @@ export default function PronosticoPage() {
               </Campo>
 
               {metodo === 'promedio_movil_simple' && (
-                <Campo id="n" etiqueta="n (periodos)">
+                <Campo
+                  id="n"
+                  etiqueta="¿Cuántos meses promediar? (n)"
+                  ayuda="El pronóstico es el promedio de los últimos n meses de demanda real. Ej.: n=3 promedia los 3 meses más recientes."
+                  className="sm:col-span-2 lg:col-span-2"
+                >
                   <Entrada id="n" type="number" min="2" inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} />
                 </Campo>
               )}
@@ -176,7 +181,12 @@ export default function PronosticoPage() {
 
               {metodo === 'promedio_movil_ponderado' && (
                 <>
-                  <Campo id="n-pesos" etiqueta="n (periodos)">
+                  <Campo
+                    id="n-pesos"
+                    etiqueta="¿Cuántos meses usar? (n)"
+                    ayuda="Por cada mes que elijas aquí abajo te va a pedir un peso."
+                    className="sm:col-span-2 lg:col-span-4"
+                  >
                     <Entrada
                       id="n-pesos"
                       type="number"
@@ -186,8 +196,18 @@ export default function PronosticoPage() {
                       onChange={(e) => cambiarCantidadDePesos(e.target.value)}
                     />
                   </Campo>
+
+                  <p className="sm:col-span-2 lg:col-span-4 -mt-2 text-sm text-texto-sec">
+                    Reparte qué tanto influye cada uno de esos meses en el pronóstico: al mes que más se parezca a lo que
+                    esperas que pase ponle el peso más alto. Entre todos los pesos deben sumar <strong>1</strong> (el 100&nbsp;%).
+                  </p>
+
                   {pesos.map((peso, i) => (
-                    <Campo key={i} id={`peso-${i}`} etiqueta={`w${i + 1} ${i === 0 ? '(más reciente)' : `(t−${i + 1})`}`}>
+                    <Campo
+                      key={i}
+                      id={`peso-${i}`}
+                      etiqueta={i === 0 ? 'Peso: el mes más reciente' : `Peso: hace ${i + 1} meses`}
+                    >
                       <Entrada
                         id={`peso-${i}`}
                         type="number"
@@ -202,9 +222,12 @@ export default function PronosticoPage() {
                   ))}
                   <div className="sm:col-span-2 lg:col-span-4">
                     {pesosSumanUno ? (
-                      <p className="text-sm text-texto-sec">Suma de los pesos: {formatearNumero(sumaPesos)}</p>
+                      <p className="text-sm text-texto-sec">Suma de los pesos: {formatearNumero(sumaPesos)} (listo, da 1)</p>
                     ) : (
-                      <Aviso tipo="alerta">Los pesos suman {formatearNumero(sumaPesos)} y deben sumar 1.</Aviso>
+                      <Aviso tipo="alerta">
+                        Los pesos suman {formatearNumero(sumaPesos)} y deben sumar 1 (100&nbsp;%). Ajusta alguno para que
+                        cuadre.
+                      </Aviso>
                     )}
                   </div>
                 </>
@@ -212,7 +235,12 @@ export default function PronosticoPage() {
 
               {metodo === 'suavizamiento_exponencial' && (
                 <>
-                  <Campo id="alpha" etiqueta="α (0–1)">
+                  <Campo
+                    id="alpha"
+                    etiqueta="α — qué tanto caso le hace a lo último (0 a 1)"
+                    ayuda="Más alto (ej. 0,8) = reacciona rápido a un cambio reciente. Más bajo (ej. 0,2) = pronóstico más estable, ignora más los saltos de un solo mes."
+                    className="sm:col-span-2"
+                  >
                     <Entrada
                       id="alpha"
                       type="number"
@@ -224,7 +252,11 @@ export default function PronosticoPage() {
                       onChange={(e) => setAlpha(e.target.value)}
                     />
                   </Campo>
-                  <Campo id="pronostico-inicial" etiqueta="Pronóstico inicial (u)" ayuda="Vacío = primer dato real">
+                  <Campo
+                    id="pronostico-inicial"
+                    etiqueta="Pronóstico inicial (u)"
+                    ayuda="Con qué número arranca el cálculo del primer mes. Vacío = usa la primera demanda real registrada."
+                  >
                     <Entrada
                       id="pronostico-inicial"
                       type="number"
@@ -239,7 +271,11 @@ export default function PronosticoPage() {
 
               {metodo === 'suavizacion_exponencial_tendencia' && (
                 <>
-                  <Campo id="alpha-holt" etiqueta="α (nivel)">
+                  <Campo
+                    id="alpha-holt"
+                    etiqueta="α — nivel: qué tanto caso le hace a lo último (0 a 1)"
+                    ayuda="Más alto = el promedio general se ajusta rápido a un cambio reciente en la demanda."
+                  >
                     <Entrada
                       id="alpha-holt"
                       type="number"
@@ -251,7 +287,11 @@ export default function PronosticoPage() {
                       onChange={(e) => setAlphaHolt(e.target.value)}
                     />
                   </Campo>
-                  <Campo id="beta" etiqueta="β (tendencia)">
+                  <Campo
+                    id="beta"
+                    etiqueta="β — tendencia: qué tan rápido ajusta si sube o baja (0 a 1)"
+                    ayuda="Más alto = si la demanda viene en subida o bajada, el pronóstico se ajusta más rápido a ese cambio de dirección."
+                  >
                     <Entrada
                       id="beta"
                       type="number"
