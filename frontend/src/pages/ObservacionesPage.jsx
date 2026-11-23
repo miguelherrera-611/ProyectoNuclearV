@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import Paginador from '../components/Paginador'
 import SelectorMes from '../components/SelectorMes'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { usePaginacion } from '../components/usePaginacion'
 import { formatearPeriodo, formatearUnidades } from '../format'
 
 const ESTILO_ENLACE_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
@@ -17,6 +19,8 @@ export default function ObservacionesPage() {
   const [observaciones, setObservaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  const pag = usePaginacion(observaciones.length, 10, id)
 
   const [mes, setMes] = useState('')
   const [cantidad, setCantidad] = useState('')
@@ -151,7 +155,7 @@ export default function ObservacionesPage() {
       )}
 
       {!cargando && observaciones.length > 0 && (
-        <Tabla etiqueta="Datos históricos">
+        <Tabla etiqueta="Datos históricos" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
           <thead>
             <tr>
               <Th>Periodo</Th>
@@ -160,7 +164,7 @@ export default function ObservacionesPage() {
             </tr>
           </thead>
           <tbody>
-            {observaciones.map((o) => (
+            {pag.slice(observaciones).map((o) => (
               <Fila key={o.id}>
                 <Td>{formatearPeriodo(o.periodo)}</Td>
                 <Td numero>{formatearUnidades(o.cantidad)}</Td>

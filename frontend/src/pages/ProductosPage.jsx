@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { usePaginacion } from '../components/usePaginacion'
 import { colorDeProducto } from '../tema/colores'
 import { useTema } from '../tema/TemaContext'
 
@@ -14,6 +16,8 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  const pag = usePaginacion(productos.length, 10)
 
   const [codigo, setCodigo] = useState('')
   const [nombre, setNombre] = useState('')
@@ -102,7 +106,7 @@ export default function ProductosPage() {
         <>
           {/* Celular: una tarjeta por producto. */}
           <ul className="grid gap-3 md:hidden">
-            {productos.map((producto) => (
+            {pag.slice(productos).map((producto) => (
               <li key={producto.id}>
                 <Tarjeta className="p-4">
                   <div className="flex items-start gap-3">
@@ -131,10 +135,16 @@ export default function ProductosPage() {
               </li>
             ))}
           </ul>
+          <div className="rounded-xl border border-borde bg-tarjeta shadow-md md:hidden">
+            <Paginador {...pag} onCambiar={pag.setPagina} />
+          </div>
 
           {/* Tableta y escritorio: tabla. */}
           <div className="hidden md:block">
-            <Tabla etiqueta="Productos">
+            <Tabla
+              etiqueta="Productos"
+              pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
+            >
               <thead>
                 <tr>
                   <Th>Producto</Th>
@@ -145,7 +155,7 @@ export default function ProductosPage() {
                 </tr>
               </thead>
               <tbody>
-                {productos.map((producto) => (
+                {pag.slice(productos).map((producto) => (
                   <Fila key={producto.id}>
                     <Td>
                       <span className="flex items-center gap-3">

@@ -176,12 +176,13 @@ export function BarraCarga({ etiqueta = 'Cargando…' }) {
 // Tabla: filas alternadas tarjeta / Blanco Hueso, sin líneas verticales,
 // texto a la izquierda y cifras a la derecha (guía, sección 6). En pantallas
 // angostas se desplaza dentro de su tarjeta, nunca la página entera.
-export function Tabla({ children, etiqueta }) {
+export function Tabla({ children, etiqueta, pie }) {
   return (
     <div className="overflow-hidden rounded-xl border border-borde bg-tarjeta shadow-md">
       <div className="overflow-x-auto" role="region" aria-label={etiqueta} tabIndex={0}>
         <table className="w-full border-collapse text-left text-sm">{children}</table>
       </div>
+      {pie}
     </div>
   )
 }
@@ -205,6 +206,6 @@ export function Td({ numero = false, children, className = '' }) {
   )
 }
 
-export function Fila({ children }) {
-  return <tr className="odd:bg-tarjeta even:bg-fila-alterna">{children}</tr>
+export function Fila({ children, className = '' }) {
+  return <tr className={`odd:bg-tarjeta even:bg-fila-alterna ${className}`}>{children}</tr>
 }

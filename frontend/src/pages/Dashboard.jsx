@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
 import GraficoLineas from '../components/GraficoLineas'
+import Paginador from '../components/Paginador'
 import { EncabezadoReporte, PieReporte } from '../components/Reporte'
 import { Aviso, BarraCarga, Boton, Estado, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo, Variacion } from '../components/ui'
+import { usePaginacion } from '../components/usePaginacion'
 import { formatearNumero, formatearPeriodo, formatearUnidades } from '../format'
 import { colorDeProducto } from '../tema/colores'
 import { useTema } from '../tema/TemaContext'
@@ -33,6 +35,8 @@ export default function Dashboard() {
   const [resumen, setResumen] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+
+  const pag = usePaginacion(resumen.length, 10)
 
   useEffect(() => {
     let vigente = true
@@ -180,7 +184,7 @@ export default function Dashboard() {
 
           {/* Celular: una tarjeta por producto, con las mismas 4 columnas. */}
           <ul className="grid gap-3 sm:hidden print:hidden">
-            {filasTabla.map((f) => (
+            {pag.slice(filasTabla).map((f) => (
               <li key={f.producto.id}>
                 <Tarjeta className="p-4">
                   <div className="flex items-start gap-3">
@@ -213,9 +217,15 @@ export default function Dashboard() {
               </li>
             ))}
           </ul>
+          <div className="rounded-xl border border-borde bg-tarjeta shadow-md sm:hidden print:hidden">
+            <Paginador {...pag} onCambiar={pag.setPagina} />
+          </div>
 
           <div className="hidden sm:block print:block">
-            <Tabla etiqueta="Pronóstico del próximo mes por producto">
+            <Tabla
+              etiqueta="Pronóstico del próximo mes por producto"
+              pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
+            >
               <thead>
                 <tr>
                   <Th>Producto</Th>
@@ -225,8 +235,8 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filasTabla.map((f) => (
-                  <Fila key={f.producto.id}>
+                {filasTabla.map((f, i) => (
+                  <Fila key={f.producto.id} className={pag.claseFila(i)}>
                     <Td>
                       <span className="flex items-start gap-3">
                         <span

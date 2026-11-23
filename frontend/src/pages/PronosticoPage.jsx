@@ -4,9 +4,11 @@ import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
 import Desplegable from '../components/Desplegable'
 import GraficoLineas from '../components/GraficoLineas'
+import Paginador from '../components/Paginador'
 import ResultadoEstacional from '../components/ResultadoEstacional'
 import { EncabezadoReporte, PieReporte } from '../components/Reporte'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
+import { usePaginacion } from '../components/usePaginacion'
 import { formatearNumero, formatearPeriodo, formatearPorcentaje, formatearUnidades } from '../format'
 import { colorDeProducto } from '../tema/colores'
 import { useTema } from '../tema/TemaContext'
@@ -43,6 +45,8 @@ export default function PronosticoPage() {
   const [calculado, setCalculado] = useState(null)
   const [error, setError] = useState('')
   const [calculando, setCalculando] = useState(false)
+
+  const pag = usePaginacion(resultado?.filas.length ?? 0, 10, calculado)
 
   useEffect(() => {
     api.productos
@@ -352,7 +356,10 @@ export default function PronosticoPage() {
             />
           </Tarjeta>
 
-          <Tabla etiqueta="Detalle del pronóstico por periodo">
+          <Tabla
+            etiqueta="Detalle del pronóstico por periodo"
+            pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
+          >
             <thead>
               <tr>
                 <Th>Periodo</Th>
@@ -366,7 +373,7 @@ export default function PronosticoPage() {
             </thead>
             <tbody>
               {resultado.filas.map((f, i) => (
-                <Fila key={i}>
+                <Fila key={i} className={pag.claseFila(i)}>
                   <Td className="whitespace-nowrap">{formatearPeriodo(f.periodo)}</Td>
                   <Td numero>{formatearUnidades(f.real)}</Td>
                   <Td numero>{formatearUnidades(f.pronostico, 2)}</Td>
