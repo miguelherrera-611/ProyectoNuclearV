@@ -64,6 +64,17 @@ export function IconoPronostico(props) {
   )
 }
 
+export function IconoUsuarios(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" />
+      <path d="M16 8.3a2.5 2.5 0 1 0 0-4.9" />
+      <path d="M19.5 20c0-2.5-1.6-4.3-4-4.9" />
+    </Svg>
+  )
+}
+
 export function IconoMenu(props) {
   return (
     <Svg {...props}>

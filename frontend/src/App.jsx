@@ -8,6 +8,7 @@ import ObservacionesPage from './pages/ObservacionesPage'
 import ProductosPage from './pages/ProductosPage'
 import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
+import UsuariosPage from './pages/UsuariosPage'
 import { TemaProvider } from './tema/TemaContext'
 
 // Sin sesión: login + 2FA como flujo de 2 pasos simple, sin rutas propias.
@@ -60,6 +61,7 @@ function AppContent() {
           <Route path="/productos" element={<ProductosPage />} />
           <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
           <Route path="/pronostico" element={<PronosticoPage />} />
+          <Route path="/usuarios" element={<UsuariosPage />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

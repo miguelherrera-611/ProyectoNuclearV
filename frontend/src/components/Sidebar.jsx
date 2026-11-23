@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { IconoInicio, IconoProductos, IconoPronostico, IconoX } from './Iconos'
+import { useAuth } from '../auth/AuthContext'
+import { IconoInicio, IconoProductos, IconoPronostico, IconoUsuarios, IconoX } from './Iconos'
 
 const ENLACES = [
   { a: '/', texto: 'Inicio', exacto: true, Icono: IconoInicio },
@@ -7,9 +8,17 @@ const ENLACES = [
   { a: '/pronostico', texto: 'Pronóstico', Icono: IconoPronostico },
 ]
 
+// Solo el administrador administra cuentas (RF-04 / RNF-11) — por eso este
+// enlace ni aparece para el gerente, aunque la ruta también se protege en el
+// backend.
+const ENLACE_USUARIOS = { a: '/usuarios', texto: 'Usuarios', Icono: IconoUsuarios }
+
 const FOCO_BARRA = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cian'
 
 function Enlaces({ onNavegar }) {
+  const { user } = useAuth()
+  const enlaces = user?.role === 'administrador' ? [...ENLACES, ENLACE_USUARIOS] : ENLACES
+
   function claseEnlace({ isActive }) {
     return `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium ${FOCO_BARRA} ${
       isActive
@@ -20,7 +29,7 @@ function Enlaces({ onNavegar }) {
 
   return (
     <nav aria-label="Principal" className="flex flex-1 flex-col gap-1 px-3">
-      {ENLACES.map(({ a, texto, exacto, Icono }) => (
+      {enlaces.map(({ a, texto, exacto, Icono }) => (
         <NavLink key={a} to={a} end={exacto} onClick={onNavegar} className={claseEnlace}>
           <Icono className="size-5 shrink-0" />
           {texto}

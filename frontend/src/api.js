@@ -70,6 +70,12 @@ export const api = {
     eliminar: (token, id) => request(`/api/observaciones/${id}`, { method: 'DELETE', token }),
   },
 
+  usuarios: {
+    listar: (token) => request('/api/usuarios', { token }),
+    crear: (token, { name, email, password, role }) =>
+      request('/api/usuarios', { method: 'POST', body: { name, email, password, role }, token }),
+  },
+
   pronosticos: {
     // body = { producto_id, metodo, ...parámetros del método } (n, pesos, alpha, beta...)
     calcular: (token, body) => request('/api/pronosticos/calcular', { method: 'POST', body, token }),
