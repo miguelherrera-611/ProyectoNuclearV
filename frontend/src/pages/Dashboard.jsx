@@ -9,35 +9,21 @@ import { formatearNumero, formatearPeriodo, formatearUnidades } from '../format'
 import { colorDeProducto } from '../tema/colores'
 import { useTema } from '../tema/TemaContext'
 
-// Cada método con los parámetros por defecto de la pantalla de pronóstico.
-// El dashboard muestra, por producto, el de menor MAD: todavía no existe el
-// "método oficial" por producto (RF-32).
-const METODOS = [
-  { metodo: 'promedio_movil_simple', nombre: 'Promedio móvil simple', parametros: { n: 2 } },
-  { metodo: 'promedio_movil_ponderado', nombre: 'Promedio móvil ponderado', parametros: { pesos: [0.4, 0.6] } },
-  { metodo: 'suavizamiento_exponencial', nombre: 'Suavizamiento exponencial', parametros: { alpha: 0.45 } },
-  { metodo: 'suavizacion_exponencial_tendencia', nombre: 'Holt', parametros: { alpha: 0.5, beta: 0.5 } },
-  { metodo: 'regresion_lineal', nombre: 'Regresión lineal', parametros: {} },
-]
+// Nombres para mostrar del método que gana por producto (menor MAD): el
+// servidor ya hace las 5 cuentas y decide el ganador en /pronosticos/resumen
+// — todavía no existe un "método oficial" por producto (RF-32), así que acá
+// solo se traduce la clave a un nombre legible.
+const NOMBRES_METODO = {
+  promedio_movil_simple: 'Promedio móvil simple',
+  promedio_movil_ponderado: 'Promedio móvil ponderado',
+  suavizamiento_exponencial: 'Suavizamiento exponencial',
+  suavizacion_exponencial_tendencia: 'Holt',
+  regresion_lineal: 'Regresión lineal',
+}
 
 // RF-39: la señal de rastreo fuera de ±4 indica que el modelo perdió validez.
 const LIMITE_SENAL = 4
 const MESES_GRAFICO = 24
-
-async function mejorPronostico(token, productoId) {
-  const resultados = await Promise.all(
-    METODOS.map((m) =>
-      api.pronosticos
-        .calcular(token, { producto_id: productoId, metodo: m.metodo, ...m.parametros })
-        .then((r) => ({ ...m, resultado: r }))
-        .catch(() => null),
-    ),
-  )
-
-  return resultados
-    .filter((r) => r && r.resultado.metricas.mad !== null)
-    .sort((a, b) => a.resultado.metricas.mad - b.resultado.metricas.mad)[0]
-}
 
 export default function Dashboard() {
   const { token, user } = useAuth()
@@ -53,13 +39,20 @@ export default function Dashboard() {
 
     async function cargar() {
       try {
-        const lista = await api.productos.listar(token)
-        const activos = lista.filter((p) => p.activo)
-        const mejores = await Promise.all(activos.map((p) => mejorPronostico(token, p.id)))
+        // Antes esto disparaba 5 llamadas por producto activo (una por
+        // método, para ver cuál daba menor error) — con 3 productos eran 15
+        // peticiones en cada carga de "Inicio". Ahora el servidor hace esas
+        // cuentas en memoria y entrega solo el ganador, en una sola llamada.
+        const [lista, resumenApi] = await Promise.all([api.productos.listar(token), api.pronosticos.resumen(token)])
 
         if (!vigente) return
         setProductos(lista)
-        setResumen(activos.map((p, i) => ({ producto: p, mejor: mejores[i] })).filter((r) => r.mejor))
+        setResumen(
+          resumenApi.map((r) => ({
+            producto: r.producto,
+            mejor: { nombre: NOMBRES_METODO[r.metodo] ?? r.metodo, resultado: r.resultado },
+          })),
+        )
       } catch (err) {
         if (vigente) setError(err.message)
       } finally {

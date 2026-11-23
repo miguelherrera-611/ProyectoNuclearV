@@ -2,9 +2,12 @@
 
 namespace Modules\Pronosticos;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
+use Modules\Productos\Producto;
+use Modules\Productos\ProductoResource;
 
 class PronosticoController
 {
@@ -77,5 +80,60 @@ class PronosticoController
         }
 
         return response()->json(['data' => $resultado]);
+    }
+
+    // Mismos método + parámetros por defecto que el Dashboard del frontend
+    // probaba uno por uno vía /pronosticos/calcular (RF-32: todavía no existe
+    // un "método oficial" por producto).
+    private const METODOS_DASHBOARD = [
+        'promedio_movil_simple' => ['n' => 2],
+        'promedio_movil_ponderado' => ['pesos' => [0.4, 0.6]],
+        'suavizamiento_exponencial' => ['alpha' => 0.45],
+        'suavizacion_exponencial_tendencia' => ['alpha' => 0.5, 'beta' => 0.5],
+        'regresion_lineal' => [],
+    ];
+
+    public function resumen(): JsonResponse
+    {
+        $productos = Producto::where('activo', true)->orderBy('nombre')->get();
+        $resumen = [];
+
+        foreach ($productos as $producto) {
+            $observaciones = Observacion::where('producto_id', $producto->id)
+                ->orderBy('periodo')
+                ->get(['periodo', 'cantidad'])
+                ->map(fn ($o) => ['periodo' => $o->periodo->toDateString(), 'cantidad' => (float) $o->cantidad])
+                ->all();
+
+            $mejorClave = null;
+            $mejorResultado = null;
+
+            foreach (self::METODOS_DASHBOARD as $clave => $parametros) {
+                try {
+                    $resultado = app(self::METODOS[$clave])->calcular($observaciones, $parametros);
+                } catch (InvalidArgumentException) {
+                    continue;
+                }
+
+                if ($resultado['metricas']['mad'] === null) {
+                    continue;
+                }
+
+                if ($mejorResultado === null || $resultado['metricas']['mad'] < $mejorResultado['metricas']['mad']) {
+                    $mejorClave = $clave;
+                    $mejorResultado = $resultado;
+                }
+            }
+
+            if ($mejorResultado !== null) {
+                $resumen[] = [
+                    'producto' => new ProductoResource($producto),
+                    'metodo' => $mejorClave,
+                    'resultado' => $mejorResultado,
+                ];
+            }
+        }
+
+        return response()->json(['data' => $resumen]);
     }
 }

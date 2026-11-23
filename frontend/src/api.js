@@ -73,6 +73,9 @@ export const api = {
   pronosticos: {
     // body = { producto_id, metodo, ...parámetros del método } (n, pesos, alpha, beta...)
     calcular: (token, body) => request('/api/pronosticos/calcular', { method: 'POST', body, token }),
+    // El mejor método (menor MAD) ya calculado por producto activo, en un
+    // solo viaje al servidor — esto es lo que usa el Dashboard.
+    resumen: (token) => request('/api/pronosticos/resumen', { token }),
   },
 }
 
