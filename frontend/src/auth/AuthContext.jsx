@@ -16,12 +16,19 @@ export function AuthProvider({ children }) {
 
   async function verifyTwoFactor(challengeToken, code) {
     const data = await api.verifyTwoFactor(challengeToken, code)
-    // El endpoint de 2FA solo entrega el token (responsabilidad única);
-    // quién es el usuario se pide aparte con el token recién obtenido.
-    const user = await api.me(data.token)
-    setToken(data.token)
-    setUser(user)
+    const user = await completeLoginWithToken(data.token)
     return { ...data, user }
+  }
+
+  // Si AUTH_TWO_FACTOR_ENABLED=false en el backend, /auth/login entrega el
+  // token directo (sin challenge_token) — este es ese segundo camino para
+  // cerrar la sesión, con la misma lógica de "pedir quién es el usuario
+  // aparte" que ya usa verifyTwoFactor.
+  async function completeLoginWithToken(token) {
+    const user = await api.me(token)
+    setToken(token)
+    setUser(user)
+    return user
   }
 
   async function logout() {
@@ -36,7 +43,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, verifyTwoFactor, logout }}>
+    <AuthContext.Provider value={{ token, user, login, verifyTwoFactor, completeLoginWithToken, logout }}>
       {children}
     </AuthContext.Provider>
   )

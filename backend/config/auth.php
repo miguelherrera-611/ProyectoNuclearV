@@ -116,4 +116,19 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Verificación en dos pasos (2FA)
+    |--------------------------------------------------------------------------
+    |
+    | Interruptor temporal: con AUTH_TWO_FACTOR_ENABLED=false en .env, el
+    | login entrega el token de acceso directo, sin pedir el código por
+    | correo. Pensado para desactivarlo un rato en producción y volver a
+    | ponerlo en true después — nunca debe quedar en false de forma
+    | permanente. Por defecto, activado.
+    |
+    */
+
+    'two_factor_enabled' => env('AUTH_TWO_FACTOR_ENABLED', false),
+
 ];

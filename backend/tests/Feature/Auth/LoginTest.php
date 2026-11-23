@@ -49,6 +49,40 @@ class LoginTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://api.brevo.com/v3/smtp/email');
     }
 
+    public function test_login_with_two_factor_disabled_returns_the_token_directly(): void
+    {
+        config(['auth.two_factor_enabled' => false]);
+
+        $user = User::factory()->create(['password' => bcrypt('secreto123')]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'secreto123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => ['token']])
+            ->assertJsonMissingPath('data.two_factor_required')
+            ->assertJsonMissingPath('data.challenge_token');
+
+        // No debe quedar ningún reto de 2FA pendiente en el usuario.
+        $user->refresh();
+        $this->assertNull($user->two_factor_code);
+
+        $this->assertDatabaseHas('login_audits', [
+            'event' => 'login_success_2fa_disabled',
+            'email' => $user->email,
+        ]);
+
+        // El token que entregó debe servir de verdad para una ruta protegida.
+        $this->withToken($response->json('data.token'))
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id);
+
+        Http::assertNothingSent();
+    }
+
     public function test_login_with_wrong_password_returns_generic_error(): void
     {
         $user = User::factory()->create(['password' => bcrypt('secreto123')]);

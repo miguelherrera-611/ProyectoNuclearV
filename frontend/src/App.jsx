@@ -14,13 +14,20 @@ import { TemaProvider } from './tema/TemaContext'
 // react-router solo entra una vez autenticado, cuando ya hay varias
 // pantallas reales con necesidad de URL propia.
 function FlujoDeAcceso() {
+  const { completeLoginWithToken } = useAuth()
   const [step, setStep] = useState('login')
   const [challenge, setChallenge] = useState(null)
 
   if (step === 'login') {
     return (
       <LoginPage
-        onSubmitted={({ challengeToken, devCode }) => {
+        onSubmitted={({ challengeToken, devCode, token }) => {
+          // Interruptor AUTH_TWO_FACTOR_ENABLED=false: el backend ya mandó
+          // el token, sin challenge — nos saltamos la pantalla de 2FA.
+          if (token) {
+            completeLoginWithToken(token)
+            return
+          }
           setChallenge({ challengeToken, devCode })
           setStep('two-factor')
         }}

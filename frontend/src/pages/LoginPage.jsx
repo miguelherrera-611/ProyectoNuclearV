@@ -30,7 +30,9 @@ export default function LoginPage({ onSubmitted }) {
     setSubmitting(true)
     try {
       const data = await login(email, password)
-      onSubmitted({ challengeToken: data.challenge_token, devCode: data.dev_code })
+      // Camino normal: data.challenge_token (va a la pantalla de 2FA).
+      // Con AUTH_TWO_FACTOR_ENABLED=false en el backend: data.token directo.
+      onSubmitted({ challengeToken: data.challenge_token, devCode: data.dev_code, token: data.token })
     } catch (error) {
       setErrors({ form: error.message })
     } finally {

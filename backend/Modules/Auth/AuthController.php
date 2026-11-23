@@ -35,6 +35,22 @@ class AuthController
             ], 422);
         }
 
+        if (! config('auth.two_factor_enabled')) {
+            // Interruptor temporal (ver config/auth.php): entrega el token
+            // directo, sin pedir el código por correo. Se audita igual,
+            // para dejar rastro de que este login salió sin 2FA.
+            $token = $user->createToken('web')->plainTextToken;
+
+            LoginAudit::record('login_success_2fa_disabled', [
+                'email' => $user->email,
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'data' => ['token' => $token],
+            ]);
+        }
+
         $challenge = $user->generateTwoFactorChallenge();
 
         $sent = app(BrevoMailer::class)->sendTwoFactorCode($user, $challenge['code']);
