@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'permisos',
     ];
 
     public const ROLE_ADMINISTRADOR = 'administrador';
@@ -32,6 +33,18 @@ class User extends Authenticatable
     public function esAdministrador(): bool
     {
         return $this->role === self::ROLE_ADMINISTRADOR;
+    }
+
+    // Red de seguridad a nivel de modelo: cualquier usuario que se cree sin
+    // "permisos" explícitos (factories, tinker, un seeder futuro...) arranca
+    // con los default de su rol en vez de quedar sin ningún permiso. El
+    // UsuarioController ya los manda explícitos siempre; esto cubre todo lo
+    // demás que crea usuarios.
+    protected static function booted(): void
+    {
+        static::creating(function (self $user) {
+            $user->permisos ??= Permisos::defaultParaRol($user->role ?? self::ROLE_GERENTE);
+        });
     }
 
     protected $hidden = [
@@ -49,7 +62,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_expires_at' => 'datetime',
+            'permisos' => 'array',
         ];
+    }
+
+    // Permisos propios de ESTE usuario (se sembraron desde Permisos::
+    // defaultParaRol() al crearlo/editarlo, pero de ahí en adelante son
+    // independientes del rol — ver Modules\Auth\Permisos).
+    public function tienePermiso(string $clave): bool
+    {
+        return in_array($clave, $this->permisos ?? [], true);
     }
 
     public const MAX_TWO_FACTOR_ATTEMPTS = 5;

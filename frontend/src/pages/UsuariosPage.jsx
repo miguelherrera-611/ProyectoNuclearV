@@ -11,6 +11,8 @@ const ROLES = [
   { valor: 'gerente', etiqueta: 'Gerente' },
 ]
 
+const FORMULARIO_VACIO = { id: null, name: '', email: '', password: '', role: 'gerente', permisos: [] }
+
 function formatearFecha(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -21,23 +23,26 @@ export default function UsuariosPage() {
   const esAdministrador = user?.role === 'administrador'
 
   const [usuarios, setUsuarios] = useState([])
+  const [catalogo, setCatalogo] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState('gerente')
+  const [form, setForm] = useState(FORMULARIO_VACIO)
   const [errorForm, setErrorForm] = useState('')
   const [enviando, setEnviando] = useState(false)
 
   const pag = usePaginacion(usuarios.length, 10)
+  const editando = form.id !== null
 
-  async function cargarUsuarios() {
+  async function cargarTodo() {
     setCargando(true)
     try {
-      const data = await api.usuarios.listar(token)
-      setUsuarios(data)
+      const [listaUsuarios, listaCatalogo] = await Promise.all([
+        api.usuarios.listar(token),
+        api.usuarios.catalogoPermisos(token),
+      ])
+      setUsuarios(listaUsuarios)
+      setCatalogo(listaCatalogo)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -46,31 +51,60 @@ export default function UsuariosPage() {
   }
 
   useEffect(() => {
-    if (esAdministrador) cargarUsuarios()
+    if (esAdministrador) cargarTodo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleCrear(event) {
+  // Al elegir el rol (creando, o editando), se parte de lo que trae ese rol
+  // por defecto — de ahí el administrador agrega o quita lo que quiera para
+  // esta persona en particular.
+  function cambiarRol(role) {
+    setForm((f) => ({ ...f, role, permisos: catalogo?.default_por_rol[role] ?? [] }))
+  }
+
+  function alternarPermiso(clave) {
+    setForm((f) => ({
+      ...f,
+      permisos: f.permisos.includes(clave) ? f.permisos.filter((p) => p !== clave) : [...f.permisos, clave],
+    }))
+  }
+
+  function editarUsuario(u) {
+    setForm({ id: u.id, name: u.name, email: u.email, password: '', role: u.role, permisos: u.permisos })
+    setErrorForm('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelarEdicion() {
+    setForm(FORMULARIO_VACIO)
+    setErrorForm('')
+  }
+
+  async function handleGuardar(event) {
     event.preventDefault()
     setErrorForm('')
 
-    if (!name || !email || !password) {
-      setErrorForm('Completa nombre, correo y contraseña.')
+    if (!form.name || !form.email || (!editando && !form.password)) {
+      setErrorForm('Completa nombre, correo' + (editando ? '' : ' y contraseña') + '.')
       return
     }
-    if (password.length < 8) {
+    if (form.password && form.password.length < 8) {
       setErrorForm('La contraseña debe tener al menos 8 caracteres.')
       return
     }
 
     setEnviando(true)
     try {
-      await api.usuarios.crear(token, { name, email, password, role })
-      setName('')
-      setEmail('')
-      setPassword('')
-      setRole('gerente')
-      await cargarUsuarios()
+      const datos = { name: form.name, email: form.email, role: form.role, permisos: form.permisos }
+      if (form.password) datos.password = form.password
+
+      if (editando) {
+        await api.usuarios.editar(token, form.id, datos)
+      } else {
+        await api.usuarios.crear(token, datos)
+      }
+      setForm(FORMULARIO_VACIO)
+      await cargarTodo()
     } catch (err) {
       setErrorForm(err.message)
     } finally {
@@ -78,7 +112,7 @@ export default function UsuariosPage() {
     }
   }
 
-  // Defensa en profundidad: el backend ya rechaza esto (middleware 'admin'),
+  // Defensa en profundidad: el backend ya rechaza esto (Gate por permiso),
   // pero si un gerente entra por URL directa no debe ni ver el formulario.
   if (!esAdministrador) {
     return (
@@ -91,41 +125,81 @@ export default function UsuariosPage() {
 
   return (
     <div>
-      <Titulo subtitulo="Cuentas con acceso al sistema.">Usuarios</Titulo>
+      <Titulo subtitulo="Cuentas con acceso al sistema y sus permisos.">Usuarios</Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
       <Tarjeta className="mb-6 p-4 sm:p-6">
-        <h2 className="mb-4 font-display text-lg font-bold">Nueva cuenta</h2>
-        <form onSubmit={handleCrear} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Campo id="nombre" etiqueta="Nombre">
-            <Entrada id="nombre" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-          </Campo>
-          <Campo id="correo" etiqueta="Correo">
-            <Entrada
-              id="correo"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </Campo>
-          <Campo id="password" etiqueta="Contraseña" ayuda="Mínimo 8 caracteres.">
-            <Entrada
+        <h2 className="mb-4 font-display text-lg font-bold">{editando ? `Editar a ${form.name}` : 'Nueva cuenta'}</h2>
+        <form onSubmit={handleGuardar}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Campo id="nombre" etiqueta="Nombre">
+              <Entrada
+                id="nombre"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                autoComplete="name"
+              />
+            </Campo>
+            <Campo id="correo" etiqueta="Correo">
+              <Entrada
+                id="correo"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                autoComplete="email"
+              />
+            </Campo>
+            <Campo
               id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </Campo>
-          <Campo id="rol" etiqueta="Rol">
-            <Desplegable id="rol" value={role} onChange={setRole} opciones={ROLES} />
-          </Campo>
-          <div className="sm:col-span-2 lg:col-span-4">
-            <Boton type="submit" disabled={enviando} className="w-full sm:w-auto">
-              {enviando ? 'Creando…' : 'Crear usuario'}
+              etiqueta="Contraseña"
+              ayuda={editando ? 'Vacío = no cambiarla' : 'Mínimo 8 caracteres.'}
+            >
+              <Entrada
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                autoComplete="new-password"
+              />
+            </Campo>
+            <Campo id="rol" etiqueta="Rol">
+              <Desplegable id="rol" value={form.role} onChange={cambiarRol} opciones={ROLES} />
+            </Campo>
+          </div>
+
+          {catalogo && (
+            <div className="mt-5">
+              <p className="mb-2 text-sm font-medium text-texto">Permisos de esta persona</p>
+              <div className="grid gap-x-6 gap-y-2 rounded-lg border border-borde p-4 sm:grid-cols-2">
+                {Object.entries(catalogo.permisos).map(([clave, etiqueta]) => (
+                  <label key={clave} className="flex min-h-9 items-center gap-2 text-sm text-texto">
+                    <input
+                      type="checkbox"
+                      checked={form.permisos.includes(clave)}
+                      onChange={() => alternarPermiso(clave)}
+                      className="size-4 rounded border-campo text-principal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+                    />
+                    {etiqueta}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-texto-sec">
+                Se marcaron solos los permisos por defecto de "{ROLES.find((r) => r.valor === form.role)?.etiqueta}"
+                — agrega o quita lo que necesites para esta persona en particular.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Boton type="submit" disabled={enviando}>
+              {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario'}
             </Boton>
+            {editando && (
+              <Boton type="button" variante="secundario" onClick={cancelarEdicion}>
+                Cancelar
+              </Boton>
+            )}
           </div>
         </form>
         {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
@@ -149,6 +223,9 @@ export default function UsuariosPage() {
                   <p className="mt-2 text-sm capitalize text-texto-sec">
                     {u.role} · desde {formatearFecha(u.created_at)}
                   </p>
+                  <Boton variante="texto" className="mt-3" onClick={() => editarUsuario(u)}>
+                    Editar
+                  </Boton>
                 </Tarjeta>
               </li>
             ))}
@@ -166,6 +243,7 @@ export default function UsuariosPage() {
                   <Th>Correo</Th>
                   <Th>Rol</Th>
                   <Th>Desde</Th>
+                  <Th>Acciones</Th>
                 </tr>
               </thead>
               <tbody>
@@ -175,6 +253,11 @@ export default function UsuariosPage() {
                     <Td className="text-texto-sec">{u.email}</Td>
                     <Td className="capitalize">{u.role}</Td>
                     <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(u.created_at)}</Td>
+                    <Td>
+                      <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => editarUsuario(u)}>
+                        Editar
+                      </Boton>
+                    </Td>
                   </Fila>
                 ))}
               </tbody>

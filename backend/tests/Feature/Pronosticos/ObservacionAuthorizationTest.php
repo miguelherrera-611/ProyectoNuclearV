@@ -58,4 +58,25 @@ class ObservacionAuthorizationTest extends TestCase
         $this->assertDatabaseCount('observaciones', 1);
         $this->assertDatabaseHas('observaciones', ['producto_id' => $producto->id, 'cantidad' => 75]);
     }
+
+    #[Test]
+    public function el_permiso_es_por_persona_no_por_rol(): void
+    {
+        // Un gerente con este permiso puntual sí puede, aunque el default de
+        // su rol no lo traiga.
+        $gerente = User::factory()->create([
+            'role' => User::ROLE_GERENTE,
+            'permisos' => ['pronostico.calcular', 'observaciones.capturar'],
+        ]);
+        $producto = Producto::factory()->create();
+        $token = $gerente->createToken('test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/observaciones', [
+                'producto_id' => $producto->id,
+                'periodo' => '2024-01-01',
+                'cantidad' => 50,
+            ])
+            ->assertStatus(201);
+    }
 }

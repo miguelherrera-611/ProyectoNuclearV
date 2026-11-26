@@ -6,11 +6,10 @@ use Modules\Productos\ProductoController;
 Route::middleware('auth:sanctum')->prefix('productos')->group(function () {
     Route::get('/', [ProductoController::class, 'index']);
 
-    // RF-04 / RNF-11: la restricción se aplica en el backend, no solo
-    // ocultando el botón en el frontend.
-    Route::middleware('admin')->group(function () {
-        Route::post('/', [ProductoController::class, 'store']);
-        Route::put('/{producto}', [ProductoController::class, 'update']);
-        Route::delete('/{producto}', [ProductoController::class, 'destroy']);
-    });
+    // RF-04 / RNF-11: la restricción se aplica en el backend (permiso real
+    // del usuario, Modules\Auth\Permisos), no solo ocultando el botón en el
+    // frontend.
+    Route::middleware('can:productos.crear')->post('/', [ProductoController::class, 'store']);
+    Route::middleware('can:productos.editar')->put('/{producto}', [ProductoController::class, 'update']);
+    Route::middleware('can:productos.dar_de_baja')->delete('/{producto}', [ProductoController::class, 'destroy']);
 });

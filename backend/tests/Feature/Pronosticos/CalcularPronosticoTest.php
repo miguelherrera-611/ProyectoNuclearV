@@ -49,6 +49,24 @@ class CalcularPronosticoTest extends TestCase
     }
 
     #[Test]
+    public function rechaza_a_un_gerente_sin_el_permiso_de_calcular(): void
+    {
+        // El permiso es por persona: aunque "gerente" lo trae por defecto,
+        // a este en concreto se lo quitaron.
+        $gerente = User::factory()->create(['role' => User::ROLE_GERENTE, 'permisos' => []]);
+        $producto = $this->productoConHistorico();
+        $token = $gerente->createToken('test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/pronosticos/calcular', [
+                'producto_id' => $producto->id,
+                'metodo' => 'promedio_movil_simple',
+                'n' => 2,
+            ])
+            ->assertStatus(403);
+    }
+
+    #[Test]
     public function rechaza_n_mayor_o_igual_a_los_periodos_capturados(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);

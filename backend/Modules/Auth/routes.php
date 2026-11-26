@@ -16,10 +16,13 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-// Administración de cuentas: solo el administrador ve y crea usuarios
-// (RF-04 / RNF-11: la restricción vive acá, no solo en que el enlace esté
-// oculto en el frontend).
-Route::middleware(['auth:sanctum', 'admin'])->prefix('usuarios')->group(function () {
-    Route::get('/', [UsuarioController::class, 'index']);
-    Route::post('/', [UsuarioController::class, 'store']);
+// Administración de cuentas (RF-04 / RNF-11: la restricción vive acá, no
+// solo en que el enlace esté oculto en el frontend). "usuarios.crear" cubre
+// también editar — es la misma pantalla y el mismo riesgo (dar de alta y
+// cambiar permisos son la misma acción administrativa).
+Route::middleware('auth:sanctum')->prefix('usuarios')->group(function () {
+    Route::middleware('can:usuarios.ver')->get('/', [UsuarioController::class, 'index']);
+    Route::middleware('can:usuarios.ver')->get('/catalogo-permisos', [UsuarioController::class, 'catalogoPermisos']);
+    Route::middleware('can:usuarios.crear')->post('/', [UsuarioController::class, 'store']);
+    Route::middleware('can:usuarios.crear')->put('/{usuario}', [UsuarioController::class, 'update']);
 });

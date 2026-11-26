@@ -72,8 +72,11 @@ export const api = {
 
   usuarios: {
     listar: (token) => request('/api/usuarios', { token }),
-    crear: (token, { name, email, password, role }) =>
-      request('/api/usuarios', { method: 'POST', body: { name, email, password, role }, token }),
+    catalogoPermisos: (token) => request('/api/usuarios/catalogo-permisos', { token }),
+    crear: (token, { name, email, password, role, permisos }) =>
+      request('/api/usuarios', { method: 'POST', body: { name, email, password, role, permisos }, token }),
+    editar: (token, id, { name, email, password, role, permisos }) =>
+      request(`/api/usuarios/${id}`, { method: 'PUT', body: { name, email, password, role, permisos }, token }),
   },
 
   pronosticos: {

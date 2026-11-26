@@ -8,15 +8,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('observaciones')->group(function () {
         Route::get('/', [ObservacionController::class, 'index']);
 
-        Route::middleware('admin')->group(function () {
-            Route::post('/', [ObservacionController::class, 'store']);
-            Route::delete('/{observacion}', [ObservacionController::class, 'destroy']);
-        });
+        Route::middleware('can:observaciones.capturar')->post('/', [ObservacionController::class, 'store']);
+        Route::middleware('can:observaciones.eliminar')->delete('/{observacion}', [ObservacionController::class, 'destroy']);
     });
 
     // Calcular no modifica nada (no persiste un "escenario" todavía, eso es
-    // RF-33) — por eso sin middleware 'admin': el Gerente también puede.
-    Route::post('/pronosticos/calcular', [PronosticoController::class, 'calcular']);
+    // RF-33) — por defecto lo tienen tanto administrador como gerente
+    // (Modules\Auth\Permisos::DEFAULT_POR_ROL), pero ya queda como un
+    // permiso real que el administrador puede quitarle a alguien puntual.
+    Route::middleware('can:pronostico.calcular')->post('/pronosticos/calcular', [PronosticoController::class, 'calcular']);
 
     // Un solo viaje al servidor para el Dashboard: antes el frontend pedía
     // "el mejor método" producto por producto (5 cálculos por producto, cada

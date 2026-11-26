@@ -60,4 +60,17 @@ class ProductoAuthorizationTest extends TestCase
             ->deleteJson("/api/productos/{$producto->id}")
             ->assertStatus(403);
     }
+
+    #[Test]
+    public function el_permiso_es_por_persona_no_por_rol(): void
+    {
+        // Un administrador al que le quitaron justo este permiso puntual no
+        // puede, aunque su rol siga siendo administrador.
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR, 'permisos' => ['usuarios.ver']]);
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $this->withHeader('Authorization', "Bearer {$token}")
+            ->postJson('/api/productos', ['codigo' => 'X-001', 'nombre' => 'Producto de prueba'])
+            ->assertStatus(403);
+    }
 }
