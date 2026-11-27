@@ -127,7 +127,7 @@ export default function Dashboard() {
             </>
           }
           acciones={
-            <div data-tour="inicio-acciones" className="contents">
+            <div data-tour="inicio-acciones" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 to="/pronostico"
                 className="inline-flex min-h-11 items-center justify-center bg-principal px-5 py-2 font-display text-sm font-bold text-sobre-principal hover:bg-principal-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
