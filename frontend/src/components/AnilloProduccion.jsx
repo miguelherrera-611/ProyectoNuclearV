@@ -65,7 +65,7 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
   }, [productos])
 
   return (
-    <div className="flex flex-col items-center gap-6 sm:flex-row">
+    <div className="flex min-w-0 flex-col items-center gap-6 sm:flex-row">
       <div className="flex shrink-0 flex-col items-center gap-2">
         <div className="text-center">
           <span className="font-display text-xl font-bold" style={{ color: texto.texto }}>
@@ -101,7 +101,7 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
         <Variacion porcentaje={variacionTotal} sufijo="vs. mes anterior" />
       </div>
 
-      <ul className="flex w-full flex-col gap-2">
+      <ul className="flex w-full min-w-0 flex-col gap-2">
         {productos.map((p) => (
           <li key={p.id} className="flex items-center gap-3 rounded-lg border border-borde bg-tarjeta px-3 py-2 shadow-sm">
             <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLOR_ESTADO[p.estado] }} />

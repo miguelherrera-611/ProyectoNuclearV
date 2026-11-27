@@ -164,8 +164,8 @@ export default function Dashboard() {
 
       {!cargando && resumen.length > 0 && (
         <>
-          <div data-tour="inicio-resumen" className="mb-6 grid gap-4 lg:grid-cols-3">
-            <Tarjeta className="p-5 sm:p-6 lg:col-span-2">
+          <div data-tour="inicio-resumen" className="mb-6 grid min-w-0 gap-4 lg:grid-cols-3">
+            <Tarjeta className="min-w-0 p-5 sm:p-6 lg:col-span-2">
               <p className="mb-5 text-xs font-bold uppercase tracking-wide text-texto-sec">Producción proyectada por producto</p>
               <AnilloProduccion
                 productos={filasTabla.map((f) => ({ id: f.producto.id, nombre: f.producto.nombre, volumen: f.pronostico ?? 0, estado: f.estado }))}
