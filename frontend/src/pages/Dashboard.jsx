@@ -178,9 +178,9 @@ export default function Dashboard() {
             </Kpi>
           </div>
 
-          <Tarjeta data-tour="inicio-mapa-riesgo" className="mb-6 p-3 sm:p-6">
-            <h2 className="mb-1 px-1 font-display text-lg font-bold">Mapa de riesgo</h2>
-            <p className="mb-4 px-1 text-sm text-texto-sec">
+          <Tarjeta data-tour="inicio-mapa-riesgo" className="mb-6 p-5 sm:p-6">
+            <h2 className="mb-1 font-display text-lg font-bold">Mapa de riesgo</h2>
+            <p className="mb-4 text-sm text-texto-sec">
               Señal de rastreo (vertical, zona segura ±{LIMITE_SENAL}) vs. variación mensual (horizontal) · el tamaño es el volumen
             </p>
             <MapaDeRiesgo
@@ -195,9 +195,9 @@ export default function Dashboard() {
             />
           </Tarjeta>
 
-          <Tarjeta data-tour="inicio-grafico" className="mb-6 p-3 sm:p-6">
-            <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda de los últimos {MESES_GRAFICO} meses</h2>
-            <p className="mb-4 px-1 text-sm text-texto-sec">Unidades vendidas por mes y producto</p>
+          <Tarjeta data-tour="inicio-grafico" className="mb-6 p-5 sm:p-6">
+            <h2 className="mb-1 font-display text-lg font-bold">Demanda de los últimos {MESES_GRAFICO} meses</h2>
+            <p className="mb-4 text-sm text-texto-sec">Unidades vendidas por mes y producto</p>
             <GraficoLineas
               descripcion={`Demanda mensual de los últimos ${MESES_GRAFICO} meses por producto`}
               datos={datosGrafico}
