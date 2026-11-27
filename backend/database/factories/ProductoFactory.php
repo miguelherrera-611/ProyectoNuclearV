@@ -19,7 +19,6 @@ class ProductoFactory extends Factory
         return [
             'codigo' => fake()->unique()->bothify('PROD-###'),
             'nombre' => fake()->words(3, true),
-            'activo' => true,
         ];
     }
 }

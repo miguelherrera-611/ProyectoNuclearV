@@ -11,5 +11,5 @@ Route::middleware('auth:sanctum')->prefix('productos')->group(function () {
     // frontend.
     Route::middleware('can:productos.crear')->post('/', [ProductoController::class, 'store']);
     Route::middleware('can:productos.editar')->put('/{producto}', [ProductoController::class, 'update']);
-    Route::middleware('can:productos.dar_de_baja')->delete('/{producto}', [ProductoController::class, 'destroy']);
+    Route::middleware('can:productos.eliminar')->delete('/{producto}', [ProductoController::class, 'destroy']);
 });

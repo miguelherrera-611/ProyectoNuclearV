@@ -75,6 +75,36 @@ export function IconoUsuarios(props) {
   )
 }
 
+export function IconoPapelera(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 7h16" />
+      <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
+      <path d="M8 7v13a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V7" />
+      <path d="M10 11v6M14 11v6" />
+    </Svg>
+  )
+}
+
+export function IconoAuditoria(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3Z" />
+      <path d="M9 11h6M9 15h6M9 7h2" />
+    </Svg>
+  )
+}
+
+export function IconoRestaurar(props) {
+  return (
+    <Svg {...props}>
+      <path d="M3 10a9 9 0 1 1 2.6 6.4" />
+      <path d="M3 4v6h6" />
+    </Svg>
+  )
+}
+
 export function IconoMenu(props) {
   return (
     <Svg {...props}>

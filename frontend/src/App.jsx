@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import AppLayout from './components/AppLayout'
+import AuditoriaPage from './pages/AuditoriaPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
 import ObservacionesPage from './pages/ObservacionesPage'
+import PapeleraPage from './pages/PapeleraPage'
 import ProductosPage from './pages/ProductosPage'
 import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
@@ -62,6 +64,8 @@ function AppContent() {
           <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
           <Route path="/pronostico" element={<PronosticoPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
+          <Route path="/papelera" element={<PapeleraPage />} />
+          <Route path="/auditoria" element={<AuditoriaPage />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

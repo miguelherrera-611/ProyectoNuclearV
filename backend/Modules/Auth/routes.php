@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Auth\AuditoriaController;
 use Modules\Auth\AuthController;
+use Modules\Auth\PapeleraController;
 use Modules\Auth\UsuarioController;
 
 // Cada módulo es dueño de sus propias rutas; routes/api.php solo hace
@@ -25,4 +27,17 @@ Route::middleware('auth:sanctum')->prefix('usuarios')->group(function () {
     Route::middleware('can:usuarios.ver')->get('/catalogo-permisos', [UsuarioController::class, 'catalogoPermisos']);
     Route::middleware('can:usuarios.crear')->post('/', [UsuarioController::class, 'store']);
     Route::middleware('can:usuarios.crear')->put('/{usuario}', [UsuarioController::class, 'update']);
+    Route::middleware('can:usuarios.eliminar')->delete('/{usuario}', [UsuarioController::class, 'destroy']);
 });
+
+// Papelera: ve/restaura/purga lo eliminado de Productos, Observaciones y
+// Usuarios desde una sola pantalla (ver Modules\Auth\PapeleraController).
+Route::middleware('auth:sanctum')->prefix('papelera')->group(function () {
+    Route::middleware('can:papelera.ver')->get('/', [PapeleraController::class, 'index']);
+    Route::middleware('can:papelera.restaurar')->post('/{tipo}/{id}/restaurar', [PapeleraController::class, 'restaurar']);
+    Route::middleware('can:papelera.eliminar_permanente')->delete('/{tipo}/{id}', [PapeleraController::class, 'eliminarPermanente']);
+});
+
+// Auditoría: historial de qué hizo cada quien (crear/editar/eliminar/
+// restaurar) sobre Productos, Observaciones y Usuarios.
+Route::middleware(['auth:sanctum', 'can:auditoria.ver'])->get('/auditoria', [AuditoriaController::class, 'index']);

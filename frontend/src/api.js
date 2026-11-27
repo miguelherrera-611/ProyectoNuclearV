@@ -12,7 +12,7 @@ class ApiError extends Error {
   }
 }
 
-async function request(path, { method = 'GET', body, token } = {}) {
+async function request(path, { method = 'GET', body, token, crudo = false } = {}) {
   const headers = {
     Accept: 'application/json',
   }
@@ -43,7 +43,10 @@ async function request(path, { method = 'GET', body, token } = {}) {
 
   // El backend envuelve sus respuestas en { "data": ... } — se desenvuelve
   // acá una sola vez en vez de repetir `.data` en cada componente.
-  return payload?.data ?? payload
+  // "crudo" se salta eso: lo necesita la paginación de Auditoría, que viene
+  // del paginate() de Laravel y trae "meta" (total, página actual...) junto
+  // a "data", no los dos juntos haría perder esa información.
+  return crudo ? payload : (payload?.data ?? payload)
 }
 
 export const api = {
@@ -59,7 +62,7 @@ export const api = {
       request('/api/productos', { method: 'POST', body: { codigo, nombre }, token }),
     editar: (token, id, { codigo, nombre }) =>
       request(`/api/productos/${id}`, { method: 'PUT', body: { codigo, nombre }, token }),
-    darDeBaja: (token, id) => request(`/api/productos/${id}`, { method: 'DELETE', token }),
+    eliminar: (token, id) => request(`/api/productos/${id}`, { method: 'DELETE', token }),
   },
 
   observaciones: {
@@ -77,6 +80,7 @@ export const api = {
       request('/api/usuarios', { method: 'POST', body: { name, email, password, role, permisos }, token }),
     editar: (token, id, { name, email, password, role, permisos }) =>
       request(`/api/usuarios/${id}`, { method: 'PUT', body: { name, email, password, role, permisos }, token }),
+    eliminar: (token, id) => request(`/api/usuarios/${id}`, { method: 'DELETE', token }),
   },
 
   pronosticos: {
@@ -85,6 +89,19 @@ export const api = {
     // El mejor método (menor MAD) ya calculado por producto activo, en un
     // solo viaje al servidor — esto es lo que usa el Dashboard.
     resumen: (token) => request('/api/pronosticos/resumen', { token }),
+  },
+
+  papelera: {
+    listar: (token) => request('/api/papelera', { token }),
+    restaurar: (token, tipo, id) => request(`/api/papelera/${tipo}/${id}/restaurar`, { method: 'POST', token }),
+    eliminarPermanente: (token, tipo, id) => request(`/api/papelera/${tipo}/${id}`, { method: 'DELETE', token }),
+  },
+
+  auditoria: {
+    // crudo: true porque esto viene paginado por el servidor (puede crecer
+    // mucho con el tiempo, a diferencia de Productos/Usuarios/Observaciones
+    // que sí se traen completos y se paginan en el navegador).
+    listar: (token, pagina = 1) => request(`/api/auditoria?page=${pagina}`, { token, crudo: true }),
   },
 }
 

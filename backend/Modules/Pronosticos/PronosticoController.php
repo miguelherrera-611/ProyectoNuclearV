@@ -95,7 +95,9 @@ class PronosticoController
 
     public function resumen(): JsonResponse
     {
-        $productos = Producto::where('activo', true)->orderBy('nombre')->get();
+        // Sin where('activo', true): Producto ahora usa soft delete, así que
+        // los eliminados ya quedan fuera por el scope global de Eloquent.
+        $productos = Producto::orderBy('nombre')->get();
         $resumen = [];
 
         foreach ($productos as $producto) {

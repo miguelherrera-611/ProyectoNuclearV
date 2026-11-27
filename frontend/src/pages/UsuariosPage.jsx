@@ -20,7 +20,8 @@ function formatearFecha(iso) {
 
 export default function UsuariosPage() {
   const { token, user } = useAuth()
-  const esAdministrador = user?.role === 'administrador'
+  const puedeVer = user?.permisos?.includes('usuarios.ver')
+  const puedeEliminar = user?.permisos?.includes('usuarios.eliminar')
 
   const [usuarios, setUsuarios] = useState([])
   const [catalogo, setCatalogo] = useState(null)
@@ -51,7 +52,7 @@ export default function UsuariosPage() {
   }
 
   useEffect(() => {
-    if (esAdministrador) cargarTodo()
+    if (puedeVer) cargarTodo()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -112,9 +113,18 @@ export default function UsuariosPage() {
     }
   }
 
+  async function handleEliminar(u) {
+    try {
+      await api.usuarios.eliminar(token, u.id)
+      await cargarTodo()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   // Defensa en profundidad: el backend ya rechaza esto (Gate por permiso),
-  // pero si un gerente entra por URL directa no debe ni ver el formulario.
-  if (!esAdministrador) {
+  // pero si alguien entra por URL directa no debe ni ver el formulario.
+  if (!puedeVer) {
     return (
       <div>
         <Titulo>Usuarios</Titulo>
@@ -223,9 +233,16 @@ export default function UsuariosPage() {
                   <p className="mt-2 text-sm capitalize text-texto-sec">
                     {u.role} · desde {formatearFecha(u.created_at)}
                   </p>
-                  <Boton variante="texto" className="mt-3" onClick={() => editarUsuario(u)}>
-                    Editar
-                  </Boton>
+                  <div className="mt-3 flex gap-3">
+                    <Boton variante="texto" onClick={() => editarUsuario(u)}>
+                      Editar
+                    </Boton>
+                    {puedeEliminar && u.id !== user.id && (
+                      <Boton variante="texto" onClick={() => handleEliminar(u)}>
+                        Eliminar
+                      </Boton>
+                    )}
+                  </div>
                 </Tarjeta>
               </li>
             ))}
@@ -254,9 +271,16 @@ export default function UsuariosPage() {
                     <Td className="capitalize">{u.role}</Td>
                     <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(u.created_at)}</Td>
                     <Td>
-                      <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => editarUsuario(u)}>
-                        Editar
-                      </Boton>
+                      <div className="flex gap-3">
+                        <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => editarUsuario(u)}>
+                          Editar
+                        </Boton>
+                        {puedeEliminar && u.id !== user.id && (
+                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleEliminar(u)}>
+                            Eliminar
+                          </Boton>
+                        )}
+                      </div>
                     </Td>
                   </Fila>
                 ))}

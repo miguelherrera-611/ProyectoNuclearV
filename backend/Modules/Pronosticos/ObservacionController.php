@@ -4,6 +4,7 @@ namespace Modules\Pronosticos;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Modules\Auth\Auditoria;
 
 class ObservacionController
 {
@@ -41,19 +42,25 @@ class ObservacionController
 
         if ($observacion) {
             $observacion->update(['cantidad' => $data['cantidad']]);
+            Auditoria::registrar('editar', 'Observacion', $observacion->id, "Corrigió la observación de {$periodo} a {$data['cantidad']}");
         } else {
             $observacion = Observacion::create([
                 'producto_id' => $data['producto_id'],
                 'periodo' => $periodo,
                 'cantidad' => $data['cantidad'],
             ]);
+            Auditoria::registrar('crear', 'Observacion', $observacion->id, "Capturó la observación de {$periodo} ({$data['cantidad']})");
         }
 
         return response()->json(['data' => $observacion], 201);
     }
 
+    // Soft delete: queda restaurable desde la papelera
+    // (Modules\Auth\PapeleraController).
     public function destroy(Observacion $observacion)
     {
+        Auditoria::registrar('eliminar', 'Observacion', $observacion->id, "Eliminó la observación de {$observacion->periodo->toDateString()}");
+
         $observacion->delete();
 
         return response()->noContent();

@@ -16,9 +16,12 @@ class ResumenPronosticoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function productoConObservaciones(array $demandas, bool $activo = true): Producto
+    private function productoConObservaciones(array $demandas, bool $eliminado = false): Producto
     {
-        $producto = Producto::factory()->create(['activo' => $activo]);
+        $producto = Producto::factory()->create();
+        if ($eliminado) {
+            $producto->delete();
+        }
 
         foreach ($demandas as $i => $cantidad) {
             Observacion::create([
@@ -50,10 +53,10 @@ class ResumenPronosticoTest extends TestCase
     }
 
     #[Test]
-    public function no_incluye_productos_inactivos(): void
+    public function no_incluye_productos_eliminados(): void
     {
         $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
-        $this->productoConObservaciones([50, 65, 52, 56, 55, 60, 58, 61, 59, 65], activo: false);
+        $this->productoConObservaciones([50, 65, 52, 56, 55, 60, 58, 61, 59, 65], eliminado: true);
         $token = $admin->createToken('test')->plainTextToken;
 
         $this->withHeader('Authorization', "Bearer {$token}")

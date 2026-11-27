@@ -13,7 +13,8 @@ const ESTILO_ENLACE_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset
 export default function ObservacionesPage() {
   const { id } = useParams()
   const { token, user } = useAuth()
-  const esAdministrador = user?.role === 'administrador'
+  const puedeCapturar = user?.permisos?.includes('observaciones.capturar')
+  const puedeEliminar = user?.permisos?.includes('observaciones.eliminar')
 
   const [producto, setProducto] = useState(null)
   const [observaciones, setObservaciones] = useState([])
@@ -101,7 +102,7 @@ export default function ObservacionesPage() {
           <Link
             to={`/pronostico?producto=${id}`}
             className={`inline-flex min-h-11 items-center justify-center px-5 py-2 font-display text-sm font-bold ${
-              esAdministrador
+              puedeCapturar
                 ? 'border border-campo text-texto hover:border-texto'
                 : 'bg-principal text-sobre-principal hover:bg-principal-hover'
             } ${ESTILO_ENLACE_FOCO}`}
@@ -123,7 +124,7 @@ export default function ObservacionesPage() {
         </div>
       )}
 
-      {esAdministrador && (
+      {puedeCapturar && (
         <Tarjeta className="mb-6 p-4 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-bold">Capturar o corregir un mes</h2>
           <form onSubmit={handleCapturar} className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
@@ -160,7 +161,7 @@ export default function ObservacionesPage() {
             <tr>
               <Th>Periodo</Th>
               <Th numero>Demanda</Th>
-              {esAdministrador && <Th className="text-right">Acciones</Th>}
+              {puedeEliminar && <Th className="text-right">Acciones</Th>}
             </tr>
           </thead>
           <tbody>
@@ -168,7 +169,7 @@ export default function ObservacionesPage() {
               <Fila key={o.id}>
                 <Td>{formatearPeriodo(o.periodo)}</Td>
                 <Td numero>{formatearUnidades(o.cantidad)}</Td>
-                {esAdministrador && (
+                {puedeEliminar && (
                   <Td className="text-right">
                     <Boton
                       variante="texto"

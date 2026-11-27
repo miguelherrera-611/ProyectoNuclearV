@@ -3,6 +3,7 @@
 namespace Modules\Productos;
 
 use Illuminate\Http\Request;
+use Modules\Auth\Auditoria;
 
 class ProductoController
 {
@@ -22,6 +23,8 @@ class ProductoController
 
         $producto = Producto::create($data);
 
+        Auditoria::registrar('crear', 'Producto', $producto->id, "Creó el producto {$producto->codigo} ({$producto->nombre})");
+
         return response()->json(['data' => new ProductoResource($producto)], 201);
     }
 
@@ -34,14 +37,18 @@ class ProductoController
 
         $producto->update($data);
 
+        Auditoria::registrar('editar', 'Producto', $producto->id, "Editó el producto {$producto->codigo} ({$producto->nombre})");
+
         return response()->json(['data' => new ProductoResource($producto)]);
     }
 
-    // Nunca se borra de verdad: las observaciones históricas lo referencian
-    // y deben conservarse.
+    // Soft delete: las observaciones históricas lo siguen referenciando, y
+    // queda restaurable desde la papelera (Modules\Auth\PapeleraController).
     public function destroy(Producto $producto)
     {
-        $producto->update(['activo' => false]);
+        Auditoria::registrar('eliminar', 'Producto', $producto->id, "Eliminó el producto {$producto->codigo} ({$producto->nombre})");
+
+        $producto->delete();
 
         return response()->noContent();
     }

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { IconoInicio, IconoProductos, IconoPronostico, IconoUsuarios, IconoX } from './Iconos'
+import { IconoAuditoria, IconoInicio, IconoPapelera, IconoProductos, IconoPronostico, IconoUsuarios, IconoX } from './Iconos'
 
 const ENLACES = [
   { a: '/', texto: 'Inicio', exacto: true, Icono: IconoInicio },
@@ -8,16 +8,24 @@ const ENLACES = [
   { a: '/pronostico', texto: 'Pronóstico', Icono: IconoPronostico },
 ]
 
-// Solo el administrador administra cuentas (RF-04 / RNF-11) — por eso este
-// enlace ni aparece para el gerente, aunque la ruta también se protege en el
-// backend.
-const ENLACE_USUARIOS = { a: '/usuarios', texto: 'Usuarios', Icono: IconoUsuarios }
+// Enlaces que dependen de un permiso puntual (no del rol): la restricción
+// real vive en el backend (Gate por permiso), esto solo evita que alguien
+// sin el permiso vea un enlace a una pantalla que de todas formas le va a
+// rechazar la petición.
+const ENLACES_CON_PERMISO = [
+  { permiso: 'usuarios.ver', a: '/usuarios', texto: 'Usuarios', Icono: IconoUsuarios },
+  { permiso: 'papelera.ver', a: '/papelera', texto: 'Papelera', Icono: IconoPapelera },
+  { permiso: 'auditoria.ver', a: '/auditoria', texto: 'Auditoría', Icono: IconoAuditoria },
+]
 
 const FOCO_BARRA = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cian'
 
 function Enlaces({ onNavegar }) {
   const { user } = useAuth()
-  const enlaces = user?.role === 'administrador' ? [...ENLACES, ENLACE_USUARIOS] : ENLACES
+  const enlaces = [
+    ...ENLACES,
+    ...ENLACES_CON_PERMISO.filter(({ permiso }) => user?.permisos?.includes(permiso)),
+  ]
 
   function claseEnlace({ isActive }) {
     return `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium ${FOCO_BARRA} ${

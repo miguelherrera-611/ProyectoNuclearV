@@ -246,6 +246,43 @@ class UsuariosTest extends TestCase
     }
 
     #[Test]
+    public function el_administrador_puede_eliminar_a_otro_usuario(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+        $token = $admin->createToken('test')->plainTextToken;
+        $otro = User::factory()->create();
+        $otro->createToken('sesion-del-otro'); // debe quedar revocada al eliminarlo.
+
+        $this->withToken($token)->deleteJson("/api/usuarios/{$otro->id}")->assertNoContent();
+
+        $this->assertSoftDeleted('users', ['id' => $otro->id]);
+        $this->assertDatabaseCount('personal_access_tokens', 1); // solo queda la del admin.
+        $this->assertDatabaseHas('auditorias', ['accion' => 'eliminar', 'entidad' => 'Usuario', 'entidad_id' => $otro->id]);
+    }
+
+    #[Test]
+    public function no_te_puedes_eliminar_a_ti_mismo(): void
+    {
+        $admin = User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->deleteJson("/api/usuarios/{$admin->id}")
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'deleted_at' => null]);
+    }
+
+    #[Test]
+    public function gerente_no_puede_eliminar_un_usuario(): void
+    {
+        $token = $this->tokenDe(User::ROLE_GERENTE);
+        $otro = User::factory()->create();
+
+        $this->withToken($token)->deleteJson("/api/usuarios/{$otro->id}")->assertForbidden();
+    }
+
+    #[Test]
     public function gerente_no_puede_editar_un_usuario(): void
     {
         $token = $this->tokenDe(User::ROLE_GERENTE);

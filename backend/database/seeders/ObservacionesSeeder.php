@@ -48,7 +48,7 @@ class ObservacionesSeeder extends Seeder
         foreach (self::HISTORICOS as $codigo => $historico) {
             $producto = Producto::query()->firstOrCreate(
                 ['codigo' => $codigo],
-                ['nombre' => $historico['nombre'], 'activo' => true],
+                ['nombre' => $historico['nombre']],
             );
 
             foreach ($historico['unidades'] as $i => $cantidad) {

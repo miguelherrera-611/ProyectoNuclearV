@@ -16,7 +16,6 @@ class ProductoResource extends JsonResource
             'id' => $this->id,
             'codigo' => $this->codigo,
             'nombre' => $this->nombre,
-            'activo' => $this->activo,
         ];
     }
 }

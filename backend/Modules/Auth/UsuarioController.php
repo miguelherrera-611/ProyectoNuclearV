@@ -56,6 +56,8 @@ class UsuarioController
             'permisos' => $permisos,
         ]);
 
+        Auditoria::registrar('crear', 'Usuario', $usuario->id, "Creó al usuario {$usuario->email} ({$usuario->role})");
+
         return response()->json(['data' => new UserResource($usuario)], 201);
     }
 
@@ -86,6 +88,29 @@ class UsuarioController
 
         $usuario->save();
 
+        Auditoria::registrar('editar', 'Usuario', $usuario->id, "Editó al usuario {$usuario->email} ({$usuario->role})");
+
         return response()->json(['data' => new UserResource($usuario)]);
+    }
+
+    // Soft delete: queda restaurable desde la papelera
+    // (Modules\Auth\PapeleraController). Nunca te puedes eliminar a ti
+    // mismo — si no, quien lo haga por error se queda sin forma de entrar
+    // de nuevo a revertirlo.
+    public function destroy(Request $request, User $usuario)
+    {
+        if ($usuario->id === $request->user()->id) {
+            return response()->json([
+                'message' => 'No puedes eliminar tu propia cuenta.',
+            ], 422);
+        }
+
+        Auditoria::registrar('eliminar', 'Usuario', $usuario->id, "Eliminó al usuario {$usuario->email}");
+
+        // Revoca cualquier sesión activa de la cuenta eliminada.
+        $usuario->tokens()->delete();
+        $usuario->delete();
+
+        return response()->noContent();
     }
 }

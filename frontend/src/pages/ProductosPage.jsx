@@ -11,7 +11,8 @@ import { useTema } from '../tema/TemaContext'
 export default function ProductosPage() {
   const { token, user } = useAuth()
   const { tema } = useTema()
-  const esAdministrador = user?.role === 'administrador'
+  const puedeCrear = user?.permisos?.includes('productos.crear')
+  const puedeEliminar = user?.permisos?.includes('productos.eliminar')
 
   const [productos, setProductos] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -63,9 +64,11 @@ export default function ProductosPage() {
     }
   }
 
-  async function handleDarDeBaja(producto) {
+  // El producto no desaparece de verdad: queda en la papelera, restaurable
+  // hasta por 30 días (Modules\Auth\PapeleraController).
+  async function handleEliminar(producto) {
     try {
-      await api.productos.darDeBaja(token, producto.id)
+      await api.productos.eliminar(token, producto.id)
       await cargarProductos()
     } catch (err) {
       setError(err.message)
@@ -78,7 +81,7 @@ export default function ProductosPage() {
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
-      {esAdministrador && (
+      {puedeCrear && (
         <Tarjeta className="mb-6 p-4 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-bold">Nuevo producto</h2>
           <form onSubmit={handleCrear} className="grid gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
@@ -113,9 +116,7 @@ export default function ProductosPage() {
                     <MarcaProducto color={colorDeProducto(productos, producto.id, tema)} />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium break-words">{producto.nombre}</p>
-                      <p className="mt-1 text-sm text-texto-sec">
-                        {producto.codigo} · <EstadoProducto activo={producto.activo} />
-                      </p>
+                      <p className="mt-1 text-sm text-texto-sec">{producto.codigo}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-3">
@@ -125,9 +126,9 @@ export default function ProductosPage() {
                     >
                       Ver datos
                     </Link>
-                    {esAdministrador && producto.activo && (
-                      <Boton variante="texto" onClick={() => handleDarDeBaja(producto)}>
-                        Dar de baja
+                    {puedeEliminar && (
+                      <Boton variante="texto" onClick={() => handleEliminar(producto)}>
+                        Eliminar
                       </Boton>
                     )}
                   </div>
@@ -141,17 +142,13 @@ export default function ProductosPage() {
 
           {/* Tableta y escritorio: tabla. */}
           <div className="hidden md:block">
-            <Tabla
-              etiqueta="Productos"
-              pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
-            >
+            <Tabla etiqueta="Productos" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
               <thead>
                 <tr>
                   <Th>Producto</Th>
                   <Th>Código</Th>
-                  <Th>Estado</Th>
                   <Th>Datos históricos</Th>
-                  {esAdministrador && <Th>Acciones</Th>}
+                  {puedeEliminar && <Th>Acciones</Th>}
                 </tr>
               </thead>
               <tbody>
@@ -165,9 +162,6 @@ export default function ProductosPage() {
                     </Td>
                     <Td className="text-texto-sec">{producto.codigo}</Td>
                     <Td>
-                      <EstadoProducto activo={producto.activo} />
-                    </Td>
-                    <Td>
                       <Link
                         to={`/productos/${producto.id}/datos`}
                         className="font-medium underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
@@ -175,13 +169,11 @@ export default function ProductosPage() {
                         Ver datos
                       </Link>
                     </Td>
-                    {esAdministrador && (
+                    {puedeEliminar && (
                       <Td>
-                        {producto.activo && (
-                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleDarDeBaja(producto)}>
-                            Dar de baja
-                          </Boton>
-                        )}
+                        <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleEliminar(producto)}>
+                          Eliminar
+                        </Boton>
                       </Td>
                     )}
                   </Fila>
@@ -198,11 +190,4 @@ export default function ProductosPage() {
 // El color del producto en la lista es el mismo que en los gráficos (guía 5).
 function MarcaProducto({ color }) {
   return <span aria-hidden="true" className="mt-1 inline-block size-3 shrink-0" style={{ backgroundColor: color }} />
-}
-
-// Activo/inactivo no es una "mejora", así que no usa el verde (guía 5.3).
-function EstadoProducto({ activo }) {
-  return (
-    <span className={activo ? 'font-medium text-texto' : 'text-texto-sec'}>{activo ? 'Activo' : 'Inactivo'}</span>
-  )
 }
