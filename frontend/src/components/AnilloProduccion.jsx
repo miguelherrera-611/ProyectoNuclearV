@@ -32,8 +32,8 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
 
   const cx = 140
   const cy = 140
-  const r = 104
-  const grosor = 28
+  const r = 98
+  const grosor = 22
   const hueco = 4
   const totalVolumen = productos.reduce((s, p) => s + p.volumen, 0) || 1
 
@@ -66,7 +66,7 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
 
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row">
-      <div className="relative size-56 shrink-0">
+      <div className="relative size-44 shrink-0">
         <svg
           ref={svgRef}
           viewBox="0 0 280 280"
@@ -88,14 +88,14 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
             </path>
           ))}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-          <span className="font-display text-3xl font-bold" style={{ color: texto.texto }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+          <span className="font-display text-xl font-bold leading-tight" style={{ color: texto.texto }}>
             {formatearUnidades(total)}
           </span>
-          <span className="mt-1 text-[11px] font-bold uppercase tracking-wide" style={{ color: texto.secundario }}>
+          <span className="mt-0.5 text-[9px] font-bold uppercase leading-tight tracking-wide" style={{ color: texto.secundario }}>
             unidades proyectadas
           </span>
-          <Variacion porcentaje={variacionTotal} sufijo="vs. último mes real" />
+          <Variacion porcentaje={variacionTotal} sufijo="vs. mes anterior" />
         </div>
       </div>
 
