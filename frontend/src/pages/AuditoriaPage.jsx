@@ -74,10 +74,10 @@ export default function AuditoriaPage() {
         <Tabla
           etiqueta="Auditoría"
           pie={
-            respuesta.meta.last_page > 1 && (
+            respuesta.last_page > 1 && (
               <div className="flex flex-col items-center justify-between gap-3 border-t border-borde px-4 py-3 text-sm sm:flex-row">
                 <p className="text-texto-sec">
-                  {respuesta.meta.from}–{respuesta.meta.to} de {respuesta.meta.total}
+                  {respuesta.from}–{respuesta.to} de {respuesta.total}
                 </p>
                 <div className="flex items-center gap-3">
                   <button
@@ -89,12 +89,12 @@ export default function AuditoriaPage() {
                     Anterior
                   </button>
                   <span className="whitespace-nowrap text-texto-sec">
-                    Página {respuesta.meta.current_page} de {respuesta.meta.last_page}
+                    Página {respuesta.current_page} de {respuesta.last_page}
                   </span>
                   <button
                     type="button"
                     onClick={() => setPagina((p) => p + 1)}
-                    disabled={pagina === respuesta.meta.last_page}
+                    disabled={pagina === respuesta.last_page}
                     className={`${ESTILO_BOTON} ${ESTILO_FOCO}`}
                   >
                     Siguiente

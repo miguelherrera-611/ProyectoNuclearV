@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import AppLayout from './components/AppLayout'
+import ErrorBoundary from './components/ErrorBoundary'
 import AuditoriaPage from './pages/AuditoriaPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
@@ -48,6 +49,26 @@ function FlujoDeAcceso() {
   )
 }
 
+// Una pantalla que truena no debe tumbar sidebar/navbar con ella — distinto
+// "key" por ruta para que el error no se quede pegado al cambiar de pantalla.
+function RutasConLimiteDeError() {
+  const location = useLocation()
+
+  return (
+    <ErrorBoundary key={location.pathname}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/productos" element={<ProductosPage />} />
+        <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
+        <Route path="/pronostico" element={<PronosticoPage />} />
+        <Route path="/usuarios" element={<UsuariosPage />} />
+        <Route path="/papelera" element={<PapeleraPage />} />
+        <Route path="/auditoria" element={<AuditoriaPage />} />
+      </Routes>
+    </ErrorBoundary>
+  )
+}
+
 function AppContent() {
   const { token } = useAuth()
 
@@ -58,15 +79,7 @@ function AppContent() {
   return (
     <BrowserRouter>
       <AppLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/productos" element={<ProductosPage />} />
-          <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
-          <Route path="/pronostico" element={<PronosticoPage />} />
-          <Route path="/usuarios" element={<UsuariosPage />} />
-          <Route path="/papelera" element={<PapeleraPage />} />
-          <Route path="/auditoria" element={<AuditoriaPage />} />
-        </Routes>
+        <RutasConLimiteDeError />
       </AppLayout>
     </BrowserRouter>
   )
