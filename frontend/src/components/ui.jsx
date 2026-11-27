@@ -26,6 +26,10 @@ export function Tarjeta({ children, className = '' }) {
 }
 
 // Un solo botón "principal" por pantalla (guía 2.4); el resto, secundario.
+// "destructivo"/"destructivo-solido" (rojo) y "exito" (verde) son para que
+// una acción irreversible o de recuperación se note de un vistazo en vez de
+// verse igual que "Editar" — mismos tokens --error/--exito de siempre
+// (guía 2.5: nunca un rojo/verde inventado aparte).
 export function Boton({ variante = 'principal', className = '', type = 'button', ...props }) {
   const variantes = {
     principal:
@@ -33,6 +37,9 @@ export function Boton({ variante = 'principal', className = '', type = 'button',
     secundario:
       'border border-campo bg-transparent text-texto hover:border-texto disabled:border-borde disabled:text-texto-sec',
     texto: 'text-texto underline-offset-4 hover:underline',
+    destructivo: 'text-error underline-offset-4 hover:underline disabled:text-texto-sec',
+    'destructivo-solido': 'bg-error text-sobre-estado hover:opacity-90 disabled:bg-borde disabled:text-texto-sec',
+    exito: 'text-exito underline-offset-4 hover:underline disabled:text-texto-sec',
   }
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { usePaginacion } from '../components/usePaginacion'
@@ -59,12 +60,27 @@ export default function PapeleraPage() {
     }
   }
 
-  async function handleEliminarPermanente(item) {
+  const [itemAEliminarPermanente, setItemAEliminarPermanente] = useState(null)
+  const [errorPermanente, setErrorPermanente] = useState('')
+  const [eliminandoPermanente, setEliminandoPermanente] = useState(false)
+
+  function pedirEliminarPermanente(item) {
+    setItemAEliminarPermanente(item)
+    setErrorPermanente('')
+  }
+
+  // Si la contraseña está mal, el diálogo se queda abierto mostrando el
+  // error — no tiene sentido cerrarlo y obligar a abrirlo de nuevo.
+  async function confirmarEliminarPermanente(password) {
+    setEliminandoPermanente(true)
     try {
-      await api.papelera.eliminarPermanente(token, item.tipo, item.id)
+      await api.papelera.eliminarPermanente(token, itemAEliminarPermanente.tipo, itemAEliminarPermanente.id, password)
+      setItemAEliminarPermanente(null)
       await cargar()
     } catch (err) {
-      setError(err.message)
+      setErrorPermanente(err.message)
+    } finally {
+      setEliminandoPermanente(false)
     }
   }
 
@@ -120,15 +136,15 @@ export default function PapeleraPage() {
                     <Td>
                       <div className="flex gap-3">
                         {puedeRestaurar && (
-                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleRestaurar(item)}>
+                          <Boton variante="exito" className="min-h-0 px-0 py-0" onClick={() => handleRestaurar(item)}>
                             Restaurar
                           </Boton>
                         )}
                         {puedeEliminarPermanente && (
                           <Boton
-                            variante="texto"
+                            variante="destructivo"
                             className="min-h-0 px-0 py-0"
-                            onClick={() => handleEliminarPermanente(item)}
+                            onClick={() => pedirEliminarPermanente(item)}
                           >
                             Eliminar para siempre
                           </Boton>
@@ -141,6 +157,20 @@ export default function PapeleraPage() {
             })}
           </tbody>
         </Tabla>
+      )}
+
+      {itemAEliminarPermanente && (
+        <ConfirmacionEliminar
+          titulo="¿Eliminar para siempre?"
+          mensaje={`Se eliminará definitivamente: ${itemAEliminarPermanente.descripcion}.`}
+          textoConfirmar="Eliminar para siempre"
+          permanente
+          requierePassword
+          error={errorPermanente}
+          enviando={eliminandoPermanente}
+          onConfirmar={confirmarEliminarPermanente}
+          onCancelar={() => setItemAEliminarPermanente(null)}
+        />
       )}
     </div>
   )

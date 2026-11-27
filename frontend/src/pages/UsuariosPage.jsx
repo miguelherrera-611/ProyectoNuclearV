@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Desplegable from '../components/Desplegable'
 import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
@@ -21,6 +22,7 @@ function formatearFecha(iso) {
 export default function UsuariosPage() {
   const { token, user } = useAuth()
   const puedeVer = user?.permisos?.includes('usuarios.ver')
+  const puedeCrear = user?.permisos?.includes('usuarios.crear')
   const puedeEliminar = user?.permisos?.includes('usuarios.eliminar')
 
   const [usuarios, setUsuarios] = useState([])
@@ -28,6 +30,9 @@ export default function UsuariosPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
+  // La lista es lo primero que se ve; el formulario solo aparece al pedirlo
+  // (botón "Crear cuenta" o "Editar" en una fila), no de entrada.
+  const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [form, setForm] = useState(FORMULARIO_VACIO)
   const [errorForm, setErrorForm] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -70,15 +75,23 @@ export default function UsuariosPage() {
     }))
   }
 
+  function abrirCrear() {
+    setForm(FORMULARIO_VACIO)
+    setErrorForm('')
+    setMostrarFormulario(true)
+  }
+
   function editarUsuario(u) {
     setForm({ id: u.id, name: u.name, email: u.email, password: '', role: u.role, permisos: u.permisos })
     setErrorForm('')
+    setMostrarFormulario(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function cancelarEdicion() {
     setForm(FORMULARIO_VACIO)
     setErrorForm('')
+    setMostrarFormulario(false)
   }
 
   async function handleGuardar(event) {
@@ -105,6 +118,7 @@ export default function UsuariosPage() {
         await api.usuarios.crear(token, datos)
       }
       setForm(FORMULARIO_VACIO)
+      setMostrarFormulario(false)
       await cargarTodo()
     } catch (err) {
       setErrorForm(err.message)
@@ -113,9 +127,13 @@ export default function UsuariosPage() {
     }
   }
 
-  async function handleEliminar(u) {
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null)
+
+  async function confirmarEliminar() {
+    const usuario = usuarioAEliminar
+    setUsuarioAEliminar(null)
     try {
-      await api.usuarios.eliminar(token, u.id)
+      await api.usuarios.eliminar(token, usuario.id)
       await cargarTodo()
     } catch (err) {
       setError(err.message)
@@ -135,85 +153,90 @@ export default function UsuariosPage() {
 
   return (
     <div>
-      <Titulo subtitulo="Cuentas con acceso al sistema y sus permisos.">Usuarios</Titulo>
+      <Titulo
+        subtitulo="Cuentas con acceso al sistema y sus permisos."
+        acciones={puedeCrear && !mostrarFormulario && <Boton onClick={abrirCrear}>Crear cuenta</Boton>}
+      >
+        Usuarios
+      </Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
-      <Tarjeta className="mb-6 p-4 sm:p-6">
-        <h2 className="mb-4 font-display text-lg font-bold">{editando ? `Editar a ${form.name}` : 'Nueva cuenta'}</h2>
-        <form onSubmit={handleGuardar}>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Campo id="nombre" etiqueta="Nombre">
-              <Entrada
-                id="nombre"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                autoComplete="name"
-              />
-            </Campo>
-            <Campo id="correo" etiqueta="Correo">
-              <Entrada
-                id="correo"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                autoComplete="email"
-              />
-            </Campo>
-            <Campo
-              id="password"
-              etiqueta="Contraseña"
-              ayuda={editando ? 'Vacío = no cambiarla' : 'Mínimo 8 caracteres.'}
-            >
-              <Entrada
+      {mostrarFormulario && (
+        <Tarjeta className="mb-6 p-4 sm:p-6">
+          <h2 className="mb-4 font-display text-lg font-bold">{editando ? `Editar a ${form.name}` : 'Nueva cuenta'}</h2>
+          <form onSubmit={handleGuardar}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Campo id="nombre" etiqueta="Nombre">
+                <Entrada
+                  id="nombre"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  autoComplete="name"
+                />
+              </Campo>
+              <Campo id="correo" etiqueta="Correo">
+                <Entrada
+                  id="correo"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  autoComplete="email"
+                />
+              </Campo>
+              <Campo
                 id="password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                autoComplete="new-password"
-              />
-            </Campo>
-            <Campo id="rol" etiqueta="Rol">
-              <Desplegable id="rol" value={form.role} onChange={cambiarRol} opciones={ROLES} />
-            </Campo>
-          </div>
-
-          {catalogo && (
-            <div className="mt-5">
-              <p className="mb-2 text-sm font-medium text-texto">Permisos de esta persona</p>
-              <div className="grid gap-x-6 gap-y-2 rounded-lg border border-borde p-4 sm:grid-cols-2">
-                {Object.entries(catalogo.permisos).map(([clave, etiqueta]) => (
-                  <label key={clave} className="flex min-h-9 items-center gap-2 text-sm text-texto">
-                    <input
-                      type="checkbox"
-                      checked={form.permisos.includes(clave)}
-                      onChange={() => alternarPermiso(clave)}
-                      className="size-4 rounded border-campo text-principal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
-                    />
-                    {etiqueta}
-                  </label>
-                ))}
-              </div>
-              <p className="mt-1 text-xs text-texto-sec">
-                Se marcaron solos los permisos por defecto de "{ROLES.find((r) => r.valor === form.role)?.etiqueta}"
-                — agrega o quita lo que necesites para esta persona en particular.
-              </p>
+                etiqueta="Contraseña"
+                ayuda={editando ? 'Vacío = no cambiarla' : 'Mínimo 8 caracteres.'}
+              >
+                <Entrada
+                  id="password"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  autoComplete="new-password"
+                />
+              </Campo>
+              <Campo id="rol" etiqueta="Rol">
+                <Desplegable id="rol" value={form.role} onChange={cambiarRol} opciones={ROLES} />
+              </Campo>
             </div>
-          )}
 
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Boton type="submit" disabled={enviando}>
-              {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario'}
-            </Boton>
-            {editando && (
+            {catalogo && (
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-medium text-texto">Permisos de esta persona</p>
+                <div className="grid gap-x-6 gap-y-2 rounded-lg border border-borde p-4 sm:grid-cols-2">
+                  {Object.entries(catalogo.permisos).map(([clave, etiqueta]) => (
+                    <label key={clave} className="flex min-h-9 items-center gap-2 text-sm text-texto">
+                      <input
+                        type="checkbox"
+                        checked={form.permisos.includes(clave)}
+                        onChange={() => alternarPermiso(clave)}
+                        className="size-4 rounded border-campo text-principal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
+                      />
+                      {etiqueta}
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-texto-sec">
+                  Se marcaron solos los permisos por defecto de "{ROLES.find((r) => r.valor === form.role)?.etiqueta}"
+                  — agrega o quita lo que necesites para esta persona en particular.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Boton type="submit" disabled={enviando}>
+                {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear usuario'}
+              </Boton>
               <Boton type="button" variante="secundario" onClick={cancelarEdicion}>
                 Cancelar
               </Boton>
-            )}
-          </div>
-        </form>
-        {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
-      </Tarjeta>
+            </div>
+          </form>
+          {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
+        </Tarjeta>
+      )}
 
       {cargando && <BarraCarga etiqueta="Cargando usuarios…" />}
 
@@ -234,11 +257,13 @@ export default function UsuariosPage() {
                     {u.role} · desde {formatearFecha(u.created_at)}
                   </p>
                   <div className="mt-3 flex gap-3">
-                    <Boton variante="texto" onClick={() => editarUsuario(u)}>
-                      Editar
-                    </Boton>
+                    {puedeCrear && (
+                      <Boton variante="texto" onClick={() => editarUsuario(u)}>
+                        Editar
+                      </Boton>
+                    )}
                     {puedeEliminar && u.id !== user.id && (
-                      <Boton variante="texto" onClick={() => handleEliminar(u)}>
+                      <Boton variante="destructivo" onClick={() => setUsuarioAEliminar(u)}>
                         Eliminar
                       </Boton>
                     )}
@@ -272,11 +297,17 @@ export default function UsuariosPage() {
                     <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(u.created_at)}</Td>
                     <Td>
                       <div className="flex gap-3">
-                        <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => editarUsuario(u)}>
-                          Editar
-                        </Boton>
+                        {puedeCrear && (
+                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => editarUsuario(u)}>
+                            Editar
+                          </Boton>
+                        )}
                         {puedeEliminar && u.id !== user.id && (
-                          <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleEliminar(u)}>
+                          <Boton
+                            variante="destructivo"
+                            className="min-h-0 px-0 py-0"
+                            onClick={() => setUsuarioAEliminar(u)}
+                          >
                             Eliminar
                           </Boton>
                         )}
@@ -288,6 +319,15 @@ export default function UsuariosPage() {
             </Tabla>
           </div>
         </>
+      )}
+
+      {usuarioAEliminar && (
+        <ConfirmacionEliminar
+          titulo={`¿Eliminar a ${usuarioAEliminar.name}?`}
+          mensaje={`Se eliminará la cuenta ${usuarioAEliminar.email} y se cerrará su sesión si la tenía abierta.`}
+          onConfirmar={confirmarEliminar}
+          onCancelar={() => setUsuarioAEliminar(null)}
+        />
       )}
     </div>
   )

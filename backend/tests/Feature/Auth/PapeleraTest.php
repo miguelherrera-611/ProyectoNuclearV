@@ -15,7 +15,14 @@ class PapeleraTest extends TestCase
 
     private function tokenAdmin(): string
     {
-        return User::factory()->create(['role' => User::ROLE_ADMINISTRADOR])->createToken('test')->plainTextToken;
+        return $this->admin()->createToken('test')->plainTextToken;
+    }
+
+    // Contraseña conocida porque eliminar_permanente la exige como
+    // confirmación — UserFactory ya la deja en "password" por defecto.
+    private function admin(): User
+    {
+        return User::factory()->create(['role' => User::ROLE_ADMINISTRADOR]);
     }
 
     #[Test]
@@ -50,19 +57,51 @@ class PapeleraTest extends TestCase
         $this->assertDatabaseHas('auditorias', ['accion' => 'restaurar', 'entidad' => 'Producto', 'entidad_id' => $producto->id]);
     }
 
+    // Restaurar NO pide contraseña: no es destructivo, es la acción
+    // inversa — pedirla ahí solo sería fricción sin ganar seguridad.
     #[Test]
-    public function eliminar_permanente_lo_borra_de_verdad(): void
+    public function eliminar_permanente_lo_borra_de_verdad_si_la_contrasena_es_correcta(): void
     {
-        $token = $this->tokenAdmin();
+        $admin = $this->admin();
+        $token = $admin->createToken('test')->plainTextToken;
         $observacion = Observacion::create(['producto_id' => Producto::factory()->create()->id, 'periodo' => '2024-01-01', 'cantidad' => 10]);
         $observacion->delete();
 
         $this->withToken($token)
-            ->deleteJson("/api/papelera/observaciones/{$observacion->id}")
+            ->deleteJson("/api/papelera/observaciones/{$observacion->id}", ['password' => 'password'])
             ->assertOk();
 
         $this->assertDatabaseMissing('observaciones', ['id' => $observacion->id]);
         $this->assertDatabaseHas('auditorias', ['accion' => 'eliminar_permanente', 'entidad' => 'Observacion']);
+    }
+
+    #[Test]
+    public function eliminar_permanente_rechaza_una_contrasena_incorrecta_y_no_borra_nada(): void
+    {
+        $admin = $this->admin();
+        $token = $admin->createToken('test')->plainTextToken;
+        $producto = Producto::factory()->create();
+        $producto->delete();
+
+        $this->withToken($token)
+            ->deleteJson("/api/papelera/productos/{$producto->id}", ['password' => 'esta-no-es'])
+            ->assertStatus(422);
+
+        $this->assertSoftDeleted('productos', ['id' => $producto->id]);
+    }
+
+    #[Test]
+    public function eliminar_permanente_exige_la_contrasena(): void
+    {
+        $token = $this->tokenAdmin();
+        $producto = Producto::factory()->create();
+        $producto->delete();
+
+        $this->withToken($token)
+            ->deleteJson("/api/papelera/productos/{$producto->id}")
+            ->assertStatus(422);
+
+        $this->assertSoftDeleted('productos', ['id' => $producto->id]);
     }
 
     #[Test]

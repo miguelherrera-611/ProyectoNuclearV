@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import SelectorMes from '../components/SelectorMes'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
@@ -76,9 +77,13 @@ export default function ObservacionesPage() {
     }
   }
 
-  async function handleEliminar(observacionId) {
+  const [observacionAEliminar, setObservacionAEliminar] = useState(null)
+
+  async function confirmarEliminar() {
+    const observacion = observacionAEliminar
+    setObservacionAEliminar(null)
     try {
-      await api.observaciones.eliminar(token, observacionId)
+      await api.observaciones.eliminar(token, observacion.id)
       await cargar()
     } catch (err) {
       setError(err.message)
@@ -172,9 +177,9 @@ export default function ObservacionesPage() {
                 {puedeEliminar && (
                   <Td className="text-right">
                     <Boton
-                      variante="texto"
+                      variante="destructivo"
                       className="min-h-0 px-0 py-0"
-                      onClick={() => handleEliminar(o.id)}
+                      onClick={() => setObservacionAEliminar(o)}
                       aria-label={`Eliminar ${formatearPeriodo(o.periodo)}`}
                     >
                       Eliminar
@@ -185,6 +190,15 @@ export default function ObservacionesPage() {
             ))}
           </tbody>
         </Tabla>
+      )}
+
+      {observacionAEliminar && (
+        <ConfirmacionEliminar
+          titulo={`¿Eliminar ${formatearPeriodo(observacionAEliminar.periodo)}?`}
+          mensaje={`Se eliminará la observación de ${formatearUnidades(observacionAEliminar.cantidad)}.`}
+          onConfirmar={confirmarEliminar}
+          onCancelar={() => setObservacionAEliminar(null)}
+        />
       )}
     </div>
   )

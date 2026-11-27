@@ -3,6 +3,8 @@
 namespace Modules\Auth;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Modules\Productos\Producto;
 use Modules\Pronosticos\Observacion;
 
@@ -52,8 +54,17 @@ class PapeleraController
         return response()->json(['data' => ['tipo' => $tipo, 'id' => $id]]);
     }
 
-    public function eliminarPermanente(string $tipo, int $id): JsonResponse
+    // Pide la contraseña de quien está haciendo la acción (no la del
+    // registro que se va a borrar, obvio) como una confirmación extra: esto
+    // sí no tiene papelera detrás, no hay vuelta atrás.
+    public function eliminarPermanente(Request $request, string $tipo, int $id): JsonResponse
     {
+        $request->validate(['password' => ['required', 'string']]);
+
+        if (! Hash::check($request->string('password'), $request->user()->password)) {
+            return response()->json(['message' => 'Contraseña incorrecta.'], 422);
+        }
+
         $registro = $this->buscarEnPapelera($tipo, $id);
 
         $descripcion = self::describir($tipo, $registro);

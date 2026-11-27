@@ -94,7 +94,8 @@ export const api = {
   papelera: {
     listar: (token) => request('/api/papelera', { token }),
     restaurar: (token, tipo, id) => request(`/api/papelera/${tipo}/${id}/restaurar`, { method: 'POST', token }),
-    eliminarPermanente: (token, tipo, id) => request(`/api/papelera/${tipo}/${id}`, { method: 'DELETE', token }),
+    eliminarPermanente: (token, tipo, id, password) =>
+      request(`/api/papelera/${tipo}/${id}`, { method: 'DELETE', body: { password }, token }),
   },
 
   auditoria: {

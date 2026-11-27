@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { usePaginacion } from '../components/usePaginacion'
@@ -64,9 +65,13 @@ export default function ProductosPage() {
     }
   }
 
+  const [productoAEliminar, setProductoAEliminar] = useState(null)
+
   // El producto no desaparece de verdad: queda en la papelera, restaurable
   // hasta por 30 días (Modules\Auth\PapeleraController).
-  async function handleEliminar(producto) {
+  async function confirmarEliminar() {
+    const producto = productoAEliminar
+    setProductoAEliminar(null)
     try {
       await api.productos.eliminar(token, producto.id)
       await cargarProductos()
@@ -127,7 +132,7 @@ export default function ProductosPage() {
                       Ver datos
                     </Link>
                     {puedeEliminar && (
-                      <Boton variante="texto" onClick={() => handleEliminar(producto)}>
+                      <Boton variante="destructivo" onClick={() => setProductoAEliminar(producto)}>
                         Eliminar
                       </Boton>
                     )}
@@ -171,7 +176,11 @@ export default function ProductosPage() {
                     </Td>
                     {puedeEliminar && (
                       <Td>
-                        <Boton variante="texto" className="min-h-0 px-0 py-0" onClick={() => handleEliminar(producto)}>
+                        <Boton
+                          variante="destructivo"
+                          className="min-h-0 px-0 py-0"
+                          onClick={() => setProductoAEliminar(producto)}
+                        >
                           Eliminar
                         </Boton>
                       </Td>
@@ -182,6 +191,15 @@ export default function ProductosPage() {
             </Tabla>
           </div>
         </>
+      )}
+
+      {productoAEliminar && (
+        <ConfirmacionEliminar
+          titulo={`¿Eliminar ${productoAEliminar.nombre}?`}
+          mensaje={`Se eliminará el producto ${productoAEliminar.codigo}.`}
+          onConfirmar={confirmarEliminar}
+          onCancelar={() => setProductoAEliminar(null)}
+        />
       )}
     </div>
   )
