@@ -5,6 +5,7 @@ namespace Modules\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Modules\Productos\Producto;
 use Modules\Pronosticos\Observacion;
 
@@ -68,6 +69,13 @@ class PapeleraController
         $registro = $this->buscarEnPapelera($tipo, $id);
 
         $descripcion = self::describir($tipo, $registro);
+
+        // La foto de perfil no vive en la base de datos — si no se borra
+        // acá, queda huérfana en el disco para siempre.
+        if ($tipo === 'usuarios' && $registro->avatar_path) {
+            Storage::disk('public')->delete($registro->avatar_path);
+        }
+
         $registro->forceDelete();
 
         Auditoria::registrar('eliminar_permanente', self::entidadDe($tipo), $id, "Eliminó para siempre: {$descripcion}");

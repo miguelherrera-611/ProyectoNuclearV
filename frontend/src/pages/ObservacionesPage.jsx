@@ -114,7 +114,7 @@ export default function ObservacionesPage() {
           // formulario de captura, este pasa a secundario.
           <Link
             to={`/pronostico?producto=${id}`}
-            className={`inline-flex min-h-11 items-center justify-center px-5 py-2 font-display text-sm font-bold ${
+            className={`inline-flex min-h-11 items-center justify-center rounded-lg px-5 py-2 font-display text-sm font-bold ${
               puedeCapturar
                 ? 'border border-campo text-texto hover:border-texto'
                 : 'bg-principal text-sobre-principal hover:bg-principal-hover'

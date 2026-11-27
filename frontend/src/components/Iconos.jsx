@@ -114,6 +114,15 @@ export function IconoBuscar(props) {
   )
 }
 
+export function IconoPerfil(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-3.5 3.5-6 8-6s8 2.5 8 6" />
+    </Svg>
+  )
+}
+
 export function IconoGuia(props) {
   return (
     <Svg {...props}>

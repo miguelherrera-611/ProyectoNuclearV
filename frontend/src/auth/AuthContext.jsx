@@ -31,6 +31,13 @@ export function AuthProvider({ children }) {
     return user
   }
 
+  // Para cuando /perfil cambia nombre, foto o correo: evita tener que
+  // recargar toda la app (o volver a pedir /auth/me) solo para que el
+  // avatar/nombre de la barra superior se actualicen.
+  function actualizarUsuario(datos) {
+    setUser((actual) => ({ ...actual, ...datos }))
+  }
+
   async function logout() {
     try {
       await api.logout(token)
@@ -43,7 +50,9 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, verifyTwoFactor, completeLoginWithToken, logout }}>
+    <AuthContext.Provider
+      value={{ token, user, login, verifyTwoFactor, completeLoginWithToken, actualizarUsuario, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

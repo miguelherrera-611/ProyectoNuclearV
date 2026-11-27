@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Auth\AuditoriaController;
 use Modules\Auth\AuthController;
 use Modules\Auth\PapeleraController;
+use Modules\Auth\PerfilController;
 use Modules\Auth\UsuarioController;
 
 // Cada módulo es dueño de sus propias rutas; routes/api.php solo hace
@@ -11,11 +12,27 @@ use Modules\Auth\UsuarioController;
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::post('/verify-two-factor', [AuthController::class, 'verifyTwoFactor'])->middleware('throttle:two-factor');
+    // Mismos limiters que login/verify-two-factor: "olvide" manda correo
+    // (se clava por email+IP), "restablecer" manda challenge_token (se
+    // clava por token+IP) — mismo criterio, mismo riesgo.
+    Route::post('/olvide-password', [AuthController::class, 'olvidePassword'])->middleware('throttle:login');
+    Route::post('/restablecer-password', [AuthController::class, 'restablecerPassword'])->middleware('throttle:two-factor');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
+});
+
+// Cualquier usuario autenticado edita SU PROPIO perfil acá — a diferencia de
+// /usuarios (más abajo), que es el administrador administrando OTRAS
+// cuentas, esto no pide ningún permiso puntual.
+Route::middleware('auth:sanctum')->prefix('perfil')->group(function () {
+    Route::put('/', [PerfilController::class, 'actualizar']);
+    Route::post('/avatar', [PerfilController::class, 'subirAvatar']);
+    Route::put('/password', [PerfilController::class, 'cambiarPassword']);
+    Route::post('/cambiar-correo/solicitar', [PerfilController::class, 'solicitarCambioCorreo'])->middleware('throttle:perfil');
+    Route::post('/cambiar-correo/confirmar', [PerfilController::class, 'confirmarCambioCorreo'])->middleware('throttle:perfil');
 });
 
 // Administración de cuentas (RF-04 / RNF-11: la restricción vive acá, no

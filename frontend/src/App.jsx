@@ -8,7 +8,9 @@ import AuditoriaPage from './pages/AuditoriaPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
 import ObservacionesPage from './pages/ObservacionesPage'
+import OlvidePasswordPage from './pages/OlvidePasswordPage'
 import PapeleraPage from './pages/PapeleraPage'
+import PerfilPage from './pages/PerfilPage'
 import ProductosPage from './pages/ProductosPage'
 import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
@@ -27,6 +29,7 @@ function FlujoDeAcceso() {
   if (step === 'login') {
     return (
       <LoginPage
+        onForgotPassword={() => setStep('forgot-password')}
         onSubmitted={({ challengeToken, devCode, token }) => {
           // Interruptor AUTH_TWO_FACTOR_ENABLED=false: el backend ya mandó
           // el token, sin challenge — nos saltamos la pantalla de 2FA.
@@ -39,6 +42,10 @@ function FlujoDeAcceso() {
         }}
       />
     )
+  }
+
+  if (step === 'forgot-password') {
+    return <OlvidePasswordPage onBack={() => setStep('login')} onCompleted={() => setStep('login')} />
   }
 
   return (
@@ -63,6 +70,7 @@ function RutasConLimiteDeError() {
         <Route path="/productos" element={<ProductosPage />} />
         <Route path="/productos/:id/datos" element={<ObservacionesPage />} />
         <Route path="/pronostico" element={<PronosticoPage />} />
+        <Route path="/perfil" element={<PerfilPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/papelera" element={<PapeleraPage />} />
         <Route path="/auditoria" element={<AuditoriaPage />} />

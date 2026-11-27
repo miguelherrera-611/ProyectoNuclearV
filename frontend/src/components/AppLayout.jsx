@@ -1,19 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useTema } from '../tema/TemaContext'
 import { useTour } from '../tour/TourContext'
-import { IconoCerrarSesion, IconoChevronAbajo, IconoGuia, IconoLuna, IconoMenu, IconoSol } from './Iconos'
+import Avatar from './Avatar'
+import { IconoChevronAbajo, IconoGuia, IconoLuna, IconoMenu, IconoPerfil, IconoSol } from './Iconos'
 import Sidebar from './Sidebar'
 import { usePopover } from './usePopover'
 
 const ESTILO_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
-
-function iniciales(nombre) {
-  if (!nombre) return '?'
-  const partes = nombre.trim().split(/\s+/)
-  return ((partes[0]?.[0] ?? '') + (partes[1]?.[0] ?? '')).toUpperCase()
-}
 
 // Un solo botón con los dos símbolos (el usuario ve de una qué modo activa
 // cada lado) en vez de un ícono que cambia solo — el lado activo se marca
@@ -57,16 +52,11 @@ function BotonGuia() {
   )
 }
 
+// "Cerrar sesión" vive en el Sidebar, abajo del todo — este círculo ahora
+// solo abre el camino a "Mi perfil" (foto, nombre, correo, contraseña).
 function Perfil() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
   const { abierto, alternar, cerrar, refContenedor } = usePopover()
-
-  async function handleLogout() {
-    cerrar()
-    await logout()
-    navigate('/', { replace: true })
-  }
 
   return (
     <div ref={refContenedor} className="relative">
@@ -77,9 +67,7 @@ function Perfil() {
         aria-expanded={abierto}
         className={`flex min-h-11 items-center gap-2 rounded-lg px-2 hover:bg-texto/5 ${ESTILO_FOCO}`}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-principal font-display text-sm font-bold text-sobre-principal">
-          {iniciales(user?.name)}
-        </span>
+        <Avatar nombre={user?.name} url={user?.avatar_url} />
         <span className="hidden text-left text-sm sm:block">
           <span className="block font-medium text-texto">{user?.name}</span>
           <span className="block text-xs capitalize text-texto-sec">{user?.role}</span>
@@ -96,15 +84,15 @@ function Perfil() {
             <p className="font-medium text-texto">{user?.name}</p>
             <p className="text-xs capitalize text-texto-sec">{user?.role}</p>
           </div>
-          <button
-            type="button"
+          <Link
+            to="/perfil"
             role="menuitem"
-            onClick={handleLogout}
+            onClick={cerrar}
             className={`mt-1 flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm font-medium text-texto hover:bg-texto/5 ${ESTILO_FOCO}`}
           >
-            <IconoCerrarSesion className="size-5 text-texto-sec" />
-            Cerrar sesión
-          </button>
+            <IconoPerfil className="size-5 text-texto-sec" />
+            Mi perfil
+          </Link>
         </div>
       )}
     </div>

@@ -3,6 +3,8 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Modules\Auth\User;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -293,5 +295,75 @@ class UsuariosTest extends TestCase
             'email' => $usuario->email,
             'role' => User::ROLE_GERENTE,
         ])->assertForbidden();
+    }
+
+    #[Test]
+    public function administrador_puede_crear_un_usuario_con_foto_de_perfil(): void
+    {
+        Storage::fake('public');
+        $token = $this->tokenDe(User::ROLE_ADMINISTRADOR);
+
+        $response = $this->withToken($token)->post('/api/usuarios', [
+            'name' => 'Con Foto',
+            'email' => 'con.foto@example.com',
+            'password' => 'password123',
+            'role' => User::ROLE_GERENTE,
+            'avatar' => UploadedFile::fake()->image('foto.jpg'),
+        ]);
+
+        $response->assertCreated();
+        $this->assertNotNull($response->json('data.avatar_url'));
+
+        $nuevo = User::where('email', 'con.foto@example.com')->first();
+        Storage::disk('public')->assertExists($nuevo->avatar_path);
+    }
+
+    // El formulario manda "permisos" como un string con JSON.stringify
+    // cuando hay una foto de por medio (multipart no manda arrays sueltos
+    // bien) — UsuarioController::decodificarPermisosSiVienenComoTexto lo
+    // decodifica antes de validar.
+    #[Test]
+    public function crear_con_foto_respeta_los_permisos_mandados_como_texto_json(): void
+    {
+        Storage::fake('public');
+        $token = $this->tokenDe(User::ROLE_ADMINISTRADOR);
+
+        $response = $this->withToken($token)->post('/api/usuarios', [
+            'name' => 'Con Foto Y Permisos',
+            'email' => 'con.foto.permisos@example.com',
+            'password' => 'password123',
+            'role' => User::ROLE_GERENTE,
+            'permisos' => json_encode(['pronostico.calcular', 'observaciones.capturar']),
+            'avatar' => UploadedFile::fake()->image('foto.jpg'),
+        ]);
+
+        $response->assertCreated();
+        $this->assertEqualsCanonicalizing(
+            ['pronostico.calcular', 'observaciones.capturar'],
+            $response->json('data.permisos'),
+        );
+    }
+
+    #[Test]
+    public function administrador_puede_cambiar_la_foto_de_un_usuario_al_editar(): void
+    {
+        Storage::fake('public');
+        $token = $this->tokenDe(User::ROLE_ADMINISTRADOR);
+        $usuario = User::factory()->create();
+
+        // El navegador no manda PUT con archivos — se manda por POST con
+        // "_method=PUT" (spoofing estándar de Laravel) a la misma ruta.
+        $response = $this->withToken($token)->post("/api/usuarios/{$usuario->id}", [
+            '_method' => 'PUT',
+            'name' => $usuario->name,
+            'email' => $usuario->email,
+            'role' => User::ROLE_GERENTE,
+            'avatar' => UploadedFile::fake()->image('nueva.jpg'),
+        ]);
+
+        $response->assertOk();
+        $this->assertNotNull($response->json('data.avatar_url'));
+        $this->assertNotNull($usuario->refresh()->avatar_path);
+        Storage::disk('public')->assertExists($usuario->avatar_path);
     }
 }

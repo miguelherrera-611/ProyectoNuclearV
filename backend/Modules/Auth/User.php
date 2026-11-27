@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'role',
         'permisos',
+        'avatar_path',
     ];
 
     public const ROLE_ADMINISTRADOR = 'administrador';
@@ -55,6 +56,8 @@ class User extends Authenticatable
         'two_factor_challenge_token',
         'two_factor_expires_at',
         'two_factor_attempts',
+        'two_factor_purpose',
+        'two_factor_payload',
     ];
 
     protected function casts(): array
@@ -63,6 +66,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_expires_at' => 'datetime',
+            'two_factor_payload' => 'array',
             'permisos' => 'array',
         ];
     }
@@ -86,9 +90,16 @@ class User extends Authenticatable
     }
 
     /**
+     * El mismo mecanismo de código + token sirve para login, "olvidé mi
+     * contraseña" y "cambiar de correo" — "purpose" dice cuál de los tres
+     * es (así un código de login no sirve para confirmar un cambio de
+     * correo) y "payload" guarda el dato pendiente hasta que se confirme
+     * (el correo nuevo, por ejemplo). Generar uno nuevo invalida cualquier
+     * otro que estuviera pendiente para este usuario.
+     *
      * @return array{token: string, code: string}
      */
-    public function generateTwoFactorChallenge(): array
+    public function generateTwoFactorChallenge(string $purpose = 'login', array $payload = []): array
     {
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $token = Str::random(40);
@@ -98,6 +109,8 @@ class User extends Authenticatable
             'two_factor_challenge_token' => $token,
             'two_factor_expires_at' => now()->addMinutes(10),
             'two_factor_attempts' => 0,
+            'two_factor_purpose' => $purpose,
+            'two_factor_payload' => $payload,
         ])->save();
 
         return ['token' => $token, 'code' => $code];
@@ -139,6 +152,8 @@ class User extends Authenticatable
             'two_factor_challenge_token' => null,
             'two_factor_expires_at' => null,
             'two_factor_attempts' => 0,
+            'two_factor_purpose' => null,
+            'two_factor_payload' => null,
         ])->save();
     }
 }

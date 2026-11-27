@@ -1,6 +1,15 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { IconoAuditoria, IconoInicio, IconoPapelera, IconoProductos, IconoPronostico, IconoUsuarios, IconoX } from './Iconos'
+import {
+  IconoAuditoria,
+  IconoCerrarSesion,
+  IconoInicio,
+  IconoPapelera,
+  IconoProductos,
+  IconoPronostico,
+  IconoUsuarios,
+  IconoX,
+} from './Iconos'
 
 const ENLACES = [
   { a: '/', texto: 'Inicio', exacto: true, Icono: IconoInicio },
@@ -47,6 +56,32 @@ function Enlaces({ onNavegar }) {
   )
 }
 
+// Abajo del todo, separado de las secciones por una línea — cerrar sesión no
+// es "una sección más" para navegar, así que no va mezclado en <Enlaces>.
+function BotonCerrarSesion({ onNavegar }) {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  async function handleLogout() {
+    onNavegar?.()
+    await logout()
+    navigate('/', { replace: true })
+  }
+
+  return (
+    <div className="mt-auto border-t border-barra-linea px-3 pt-3">
+      <button
+        type="button"
+        onClick={handleLogout}
+        className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-barra-texto hover:bg-barra-texto/10 ${FOCO_BARRA}`}
+      >
+        <IconoCerrarSesion className="size-5 shrink-0" />
+        Cerrar sesión
+      </button>
+    </div>
+  )
+}
+
 // Navegación de la app (antes vivía en la barra superior horizontal): franja
 // índigo con texto blanco en claro, tarjeta oscura con línea cian en oscuro
 // — mismos tokens que ya usaba la barra (sección 6 de la guía), solo que
@@ -60,6 +95,7 @@ export default function Sidebar({ abierto, alCerrar }) {
           <span className="font-display text-lg font-bold text-barra-texto">JR Forecast</span>
         </div>
         <Enlaces />
+        <BotonCerrarSesion />
       </aside>
 
       {/* Móvil: panel deslizante sobre una cortina oscura, se cierra tocando
@@ -80,6 +116,7 @@ export default function Sidebar({ abierto, alCerrar }) {
               </button>
             </div>
             <Enlaces onNavegar={alCerrar} />
+            <BotonCerrarSesion onNavegar={alCerrar} />
           </aside>
         </div>
       )}

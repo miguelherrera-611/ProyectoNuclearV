@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import Avatar from '../components/Avatar'
 import BarraFiltros from '../components/BarraFiltros'
 import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Desplegable from '../components/Desplegable'
@@ -17,7 +18,7 @@ const ROLES = [
 // filtro de la lista.
 const ROLES_FILTRO = [{ valor: '', etiqueta: 'Todos los roles' }, ...ROLES]
 
-const FORMULARIO_VACIO = { id: null, name: '', email: '', password: '', role: 'gerente', permisos: [] }
+const FORMULARIO_VACIO = { id: null, name: '', email: '', password: '', role: 'gerente', permisos: [], avatar_url: null }
 
 function formatearFecha(iso) {
   if (!iso) return '—'
@@ -41,6 +42,9 @@ export default function UsuariosPage() {
   const [form, setForm] = useState(FORMULARIO_VACIO)
   const [errorForm, setErrorForm] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [archivoAvatar, setArchivoAvatar] = useState(null)
+  const [previaAvatar, setPreviaAvatar] = useState(null)
+  const inputAvatarRef = useRef(null)
 
   const [busqueda, setBusqueda] = useState('')
   const [filtroRol, setFiltroRol] = useState('')
@@ -89,15 +93,30 @@ export default function UsuariosPage() {
     }))
   }
 
+  function limpiarAvatarElegido() {
+    setArchivoAvatar(null)
+    setPreviaAvatar(null)
+    if (inputAvatarRef.current) inputAvatarRef.current.value = ''
+  }
+
+  function elegirAvatar(event) {
+    const elegido = event.target.files?.[0]
+    if (!elegido) return
+    setArchivoAvatar(elegido)
+    setPreviaAvatar(URL.createObjectURL(elegido))
+  }
+
   function abrirCrear() {
     setForm(FORMULARIO_VACIO)
     setErrorForm('')
+    limpiarAvatarElegido()
     setMostrarFormulario(true)
   }
 
   function editarUsuario(u) {
-    setForm({ id: u.id, name: u.name, email: u.email, password: '', role: u.role, permisos: u.permisos })
+    setForm({ id: u.id, name: u.name, email: u.email, password: '', role: u.role, permisos: u.permisos, avatar_url: u.avatar_url })
     setErrorForm('')
+    limpiarAvatarElegido()
     setMostrarFormulario(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -105,6 +124,7 @@ export default function UsuariosPage() {
   function cancelarEdicion() {
     setForm(FORMULARIO_VACIO)
     setErrorForm('')
+    limpiarAvatarElegido()
     setMostrarFormulario(false)
   }
 
@@ -125,6 +145,7 @@ export default function UsuariosPage() {
     try {
       const datos = { name: form.name, email: form.email, role: form.role, permisos: form.permisos }
       if (form.password) datos.password = form.password
+      if (archivoAvatar) datos.avatar = archivoAvatar
 
       if (editando) {
         await api.usuarios.editar(token, form.id, datos)
@@ -132,6 +153,7 @@ export default function UsuariosPage() {
         await api.usuarios.crear(token, datos)
       }
       setForm(FORMULARIO_VACIO)
+      limpiarAvatarElegido()
       setMostrarFormulario(false)
       await cargarTodo()
     } catch (err) {
@@ -186,6 +208,18 @@ export default function UsuariosPage() {
         <Tarjeta className="mb-6 p-4 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-bold">{editando ? `Editar a ${form.name}` : 'Nueva cuenta'}</h2>
           <form onSubmit={handleGuardar}>
+            <div className="mb-5 flex items-center gap-4">
+              {previaAvatar ? (
+                <img src={previaAvatar} alt="" className="size-14 shrink-0 rounded-full object-cover" />
+              ) : (
+                <Avatar nombre={form.name} url={form.avatar_url} tamano="size-14" />
+              )}
+              <Boton type="button" variante="secundario" onClick={() => inputAvatarRef.current?.click()}>
+                {form.avatar_url || previaAvatar ? 'Cambiar foto' : 'Agregar foto'}
+              </Boton>
+              <input ref={inputAvatarRef} type="file" accept="image/*" className="hidden" onChange={elegirAvatar} />
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Campo id="nombre" etiqueta="Nombre">
                 <Entrada
@@ -284,11 +318,16 @@ export default function UsuariosPage() {
             {pag.slice(usuariosFiltrados).map((u) => (
               <li key={u.id}>
                 <Tarjeta className="p-4">
-                  <p className="font-medium break-words">{u.name}</p>
-                  <p className="mt-1 text-sm text-texto-sec break-words">{u.email}</p>
-                  <p className="mt-2 text-sm capitalize text-texto-sec">
-                    {u.role} · desde {formatearFecha(u.created_at)}
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <Avatar nombre={u.name} url={u.avatar_url} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium break-words">{u.name}</p>
+                      <p className="mt-1 text-sm text-texto-sec break-words">{u.email}</p>
+                      <p className="mt-2 text-sm capitalize text-texto-sec">
+                        {u.role} · desde {formatearFecha(u.created_at)}
+                      </p>
+                    </div>
+                  </div>
                   <div className="mt-3 flex gap-3">
                     {puedeCrear && (
                       <Boton variante="texto" onClick={() => editarUsuario(u)}>
@@ -324,7 +363,12 @@ export default function UsuariosPage() {
               <tbody>
                 {pag.slice(usuariosFiltrados).map((u) => (
                   <Fila key={u.id}>
-                    <Td>{u.name}</Td>
+                    <Td>
+                      <span className="flex items-center gap-3">
+                        <Avatar nombre={u.name} url={u.avatar_url} tamano="size-8" />
+                        {u.name}
+                      </span>
+                    </Td>
                     <Td className="text-texto-sec">{u.email}</Td>
                     <Td className="capitalize">{u.role}</Td>
                     <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(u.created_at)}</Td>

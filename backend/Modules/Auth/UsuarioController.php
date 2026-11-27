@@ -3,6 +3,7 @@
 namespace Modules\Auth;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
@@ -33,6 +34,8 @@ class UsuarioController
 
     public function store(Request $request)
     {
+        $this->decodificarPermisosSiVienenComoTexto($request);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
@@ -40,6 +43,7 @@ class UsuarioController
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMINISTRADOR, User::ROLE_GERENTE])],
             'permisos' => ['sometimes', 'array'],
             'permisos.*' => ['string'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
         ]);
 
         // Si no mandan permisos explícitos, arranca con los del rol — pero
@@ -56,6 +60,10 @@ class UsuarioController
             'permisos' => $permisos,
         ]);
 
+        if ($request->hasFile('avatar')) {
+            $usuario->update(['avatar_path' => $request->file('avatar')->store('avatars', 'public')]);
+        }
+
         Auditoria::registrar('crear', 'Usuario', $usuario->id, "Creó al usuario {$usuario->email} ({$usuario->role})");
 
         return response()->json(['data' => new UserResource($usuario)], 201);
@@ -63,6 +71,8 @@ class UsuarioController
 
     public function update(Request $request, User $usuario)
     {
+        $this->decodificarPermisosSiVienenComoTexto($request);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($usuario->id)],
@@ -71,6 +81,7 @@ class UsuarioController
             'role' => ['required', 'string', Rule::in([User::ROLE_ADMINISTRADOR, User::ROLE_GERENTE])],
             'permisos' => ['sometimes', 'array'],
             'permisos.*' => ['string'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $permisos = Permisos::filtrarValidas($data['permisos'] ?? Permisos::defaultParaRol($data['role']));
@@ -86,11 +97,31 @@ class UsuarioController
             $usuario->password = $data['password'];
         }
 
+        if ($request->hasFile('avatar')) {
+            if ($usuario->avatar_path) {
+                Storage::disk('public')->delete($usuario->avatar_path);
+            }
+            $usuario->avatar_path = $request->file('avatar')->store('avatars', 'public');
+        }
+
         $usuario->save();
 
         Auditoria::registrar('editar', 'Usuario', $usuario->id, "Editó al usuario {$usuario->email} ({$usuario->role})");
 
         return response()->json(['data' => new UserResource($usuario)]);
+    }
+
+    // El formulario de Usuarios manda "permisos" como array JSON normal
+    // cuando no hay foto (petición JSON de siempre), pero como string con
+    // JSON.stringify cuando hay que subir un archivo (multipart no sabe
+    // mandar un array de otra forma sin ensuciarlo con "permisos[]"). Si
+    // llega como texto, se decodifica antes de validar — así el resto del
+    // método no necesita saber cuál de los dos casos fue.
+    private function decodificarPermisosSiVienenComoTexto(Request $request): void
+    {
+        if (is_string($request->input('permisos'))) {
+            $request->merge(['permisos' => json_decode($request->input('permisos'), true) ?? []]);
+        }
     }
 
     // Soft delete: queda restaurable desde la papelera

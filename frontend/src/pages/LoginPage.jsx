@@ -5,7 +5,7 @@ import { Aviso, BarraCarga, Boton } from '../components/ui'
 
 // Paso 1 del login: si las credenciales son correctas, el backend no
 // entrega token todavía — manda un código por correo.
-export default function LoginPage({ onSubmitted }) {
+export default function LoginPage({ onSubmitted, onForgotPassword }) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -66,6 +66,14 @@ export default function LoginPage({ onSubmitted }) {
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
+
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="mb-2 block text-sm font-medium text-texto-sec underline-offset-4 hover:text-texto hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cian"
+        >
+          ¿Olvidaste tu contraseña?
+        </button>
 
         <Boton type="submit" disabled={submitting} className="mt-4 w-full uppercase tracking-wide">
           Ingresar

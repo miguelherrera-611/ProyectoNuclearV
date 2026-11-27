@@ -5,6 +5,7 @@ namespace Modules\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController
 {
@@ -123,6 +124,84 @@ class AuthController
                 'token' => $token,
             ],
         ]);
+    }
+
+    // "purpose" = 'password_reset' en el challenge (User::
+    // generateTwoFactorChallenge) es lo único que distingue este código del
+    // de login — así uno no sirve para el otro aunque compartan las mismas
+    // columnas. Responde siempre igual, exista o no el correo (nunca se
+    // revela qué cuentas existen); si no existe, el token que se entrega no
+    // quedó guardado en ningún usuario y el siguiente paso simplemente va a
+    // fallar con "código inválido".
+    public function olvidePassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        $response = [
+            'data' => [
+                'message' => 'Si el correo está registrado, te enviamos un código para continuar.',
+                'challenge_token' => Str::random(40),
+            ],
+        ];
+
+        if ($user) {
+            $challenge = $user->generateTwoFactorChallenge('password_reset');
+            $response['data']['challenge_token'] = $challenge['token'];
+
+            $sent = app(BrevoMailer::class)->sendTwoFactorCode($user, $challenge['code']);
+
+            LoginAudit::record('password_reset_requested', [
+                'email' => $user->email,
+                'user_id' => $user->id,
+                'meta' => ['delivered' => $sent],
+            ]);
+
+            if (app()->environment(['local', 'testing'])) {
+                $response['data']['dev_code'] = $challenge['code'];
+            }
+        } else {
+            LoginAudit::record('password_reset_requested_unknown_email', ['email' => $data['email']]);
+        }
+
+        return response()->json($response);
+    }
+
+    public function restablecerPassword(Request $request)
+    {
+        $data = $request->validate([
+            'challenge_token' => ['required', 'string'],
+            'code' => ['required', 'string'],
+            'password_nueva' => ['required', 'string', Password::min(8)],
+        ]);
+
+        $user = User::where('two_factor_challenge_token', $data['challenge_token'])
+            ->where('two_factor_purpose', 'password_reset')
+            ->first();
+
+        if (! $user || ! $user->verifyTwoFactorCode($data['code'])) {
+            LoginAudit::record('password_reset_failed', $user ? ['email' => $user->email, 'user_id' => $user->id] : []);
+
+            return response()->json([
+                'message' => 'Código inválido o expirado.',
+            ], 422);
+        }
+
+        $user->password = $data['password_nueva'];
+        $user->save();
+
+        // Cierra cualquier sesión que hubiera quedado abierta con la
+        // contraseña anterior — quien la olvidó probablemente ya no tenía
+        // ninguna, pero si alguien más la tenía abierta sin ser el dueño,
+        // esto la corta.
+        $user->tokens()->delete();
+
+        LoginAudit::record('password_reset_completed', ['email' => $user->email, 'user_id' => $user->id]);
+
+        return response()->noContent();
     }
 
     public function logout(Request $request)
