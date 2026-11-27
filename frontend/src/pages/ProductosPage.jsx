@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import BarraFiltros from '../components/BarraFiltros'
 import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Campo, Entrada, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
@@ -19,7 +20,13 @@ export default function ProductosPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  const pag = usePaginacion(productos.length, 10)
+  const [busqueda, setBusqueda] = useState('')
+  const termino = busqueda.trim().toLowerCase()
+  const productosFiltrados = termino
+    ? productos.filter((p) => p.nombre.toLowerCase().includes(termino) || p.codigo.toLowerCase().includes(termino))
+    : productos
+
+  const pag = usePaginacion(productosFiltrados.length, 10, busqueda)
 
   const [codigo, setCodigo] = useState('')
   const [nombre, setNombre] = useState('')
@@ -111,10 +118,18 @@ export default function ProductosPage() {
       )}
 
       {!cargando && productos.length > 0 && (
+        <BarraFiltros busqueda={busqueda} onBusqueda={setBusqueda} placeholderBusqueda="Buscar por código o nombre…" />
+      )}
+
+      {!cargando && productos.length > 0 && productosFiltrados.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">Ningún producto coincide con "{busqueda}".</Tarjeta>
+      )}
+
+      {!cargando && productosFiltrados.length > 0 && (
         <>
           {/* Celular: una tarjeta por producto. */}
           <ul className="grid gap-3 md:hidden">
-            {pag.slice(productos).map((producto) => (
+            {pag.slice(productosFiltrados).map((producto) => (
               <li key={producto.id}>
                 <Tarjeta className="p-4">
                   <div className="flex items-start gap-3">
@@ -157,7 +172,7 @@ export default function ProductosPage() {
                 </tr>
               </thead>
               <tbody>
-                {pag.slice(productos).map((producto) => (
+                {pag.slice(productosFiltrados).map((producto) => (
                   <Fila key={producto.id}>
                     <Td>
                       <span className="flex items-center gap-3">

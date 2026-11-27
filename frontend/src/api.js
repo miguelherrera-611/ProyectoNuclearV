@@ -101,8 +101,16 @@ export const api = {
   auditoria: {
     // crudo: true porque esto viene paginado por el servidor (puede crecer
     // mucho con el tiempo, a diferencia de Productos/Usuarios/Observaciones
-    // que sí se traen completos y se paginan en el navegador).
-    listar: (token, pagina = 1) => request(`/api/auditoria?page=${pagina}`, { token, crudo: true }),
+    // que sí se traen completos y se paginan en el navegador) — por eso los
+    // filtros también se mandan al servidor, no se aplican sobre una lista
+    // ya traída.
+    listar: (token, pagina = 1, { entidad = '', accion = '', buscar = '' } = {}) => {
+      const parametros = new URLSearchParams({ page: pagina })
+      if (entidad) parametros.set('entidad', entidad)
+      if (accion) parametros.set('accion', accion)
+      if (buscar) parametros.set('buscar', buscar)
+      return request(`/api/auditoria?${parametros}`, { token, crudo: true })
+    },
   },
 }
 

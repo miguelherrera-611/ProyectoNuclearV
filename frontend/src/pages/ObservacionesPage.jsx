@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import BarraFiltros from '../components/BarraFiltros'
 import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import SelectorMes from '../components/SelectorMes'
@@ -22,7 +23,14 @@ export default function ObservacionesPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  const pag = usePaginacion(observaciones.length, 10, id)
+  const [filtroAnio, setFiltroAnio] = useState('')
+  const anios = [...new Set(observaciones.map((o) => o.periodo.slice(0, 4)))].sort().reverse()
+  const opcionesAnio = [{ valor: '', etiqueta: 'Todos los años' }, ...anios.map((a) => ({ valor: a, etiqueta: a }))]
+  const observacionesFiltradas = filtroAnio
+    ? observaciones.filter((o) => o.periodo.startsWith(filtroAnio))
+    : observaciones
+
+  const pag = usePaginacion(observacionesFiltradas.length, 10, `${id}|${filtroAnio}`)
 
   const [mes, setMes] = useState('')
   const [cantidad, setCantidad] = useState('')
@@ -90,8 +98,8 @@ export default function ObservacionesPage() {
     }
   }
 
-  const total = observaciones.reduce((suma, o) => suma + Number(o.cantidad), 0)
-  const promedio = observaciones.length > 0 ? total / observaciones.length : null
+  const total = observacionesFiltradas.reduce((suma, o) => suma + Number(o.cantidad), 0)
+  const promedio = observacionesFiltradas.length > 0 ? total / observacionesFiltradas.length : null
 
   return (
     <div>
@@ -121,9 +129,9 @@ export default function ObservacionesPage() {
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
-      {observaciones.length > 0 && (
+      {observacionesFiltradas.length > 0 && (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <Kpi etiqueta="Periodos" valor={observaciones.length} />
+          <Kpi etiqueta="Periodos" valor={observacionesFiltradas.length} />
           <Kpi etiqueta="Total" valor={formatearUnidades(total)} />
           <Kpi etiqueta="Promedio mensual" valor={formatearUnidades(promedio)} />
         </div>
@@ -161,6 +169,14 @@ export default function ObservacionesPage() {
       )}
 
       {!cargando && observaciones.length > 0 && (
+        <BarraFiltros filtros={[{ id: 'filtro-anio', value: filtroAnio, onChange: setFiltroAnio, opciones: opcionesAnio }]} />
+      )}
+
+      {!cargando && observaciones.length > 0 && observacionesFiltradas.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">No hay datos capturados para {filtroAnio}.</Tarjeta>
+      )}
+
+      {!cargando && observacionesFiltradas.length > 0 && (
         <Tabla etiqueta="Datos históricos" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
           <thead>
             <tr>
@@ -170,7 +186,7 @@ export default function ObservacionesPage() {
             </tr>
           </thead>
           <tbody>
-            {pag.slice(observaciones).map((o) => (
+            {pag.slice(observacionesFiltradas).map((o) => (
               <Fila key={o.id}>
                 <Td>{formatearPeriodo(o.periodo)}</Td>
                 <Td numero>{formatearUnidades(o.cantidad)}</Td>

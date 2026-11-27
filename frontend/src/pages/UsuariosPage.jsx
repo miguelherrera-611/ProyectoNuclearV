@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import BarraFiltros from '../components/BarraFiltros'
 import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Desplegable from '../components/Desplegable'
 import Paginador from '../components/Paginador'
@@ -11,6 +12,10 @@ const ROLES = [
   { valor: 'administrador', etiqueta: 'Administrador' },
   { valor: 'gerente', etiqueta: 'Gerente' },
 ]
+
+// Para el formulario no tiene sentido "todos los roles" — es solo para el
+// filtro de la lista.
+const ROLES_FILTRO = [{ valor: '', etiqueta: 'Todos los roles' }, ...ROLES]
 
 const FORMULARIO_VACIO = { id: null, name: '', email: '', password: '', role: 'gerente', permisos: [] }
 
@@ -37,7 +42,16 @@ export default function UsuariosPage() {
   const [errorForm, setErrorForm] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  const pag = usePaginacion(usuarios.length, 10)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroRol, setFiltroRol] = useState('')
+  const termino = busqueda.trim().toLowerCase()
+  const usuariosFiltrados = usuarios.filter(
+    (u) =>
+      (filtroRol === '' || u.role === filtroRol) &&
+      (termino === '' || u.name.toLowerCase().includes(termino) || u.email.toLowerCase().includes(termino)),
+  )
+
+  const pag = usePaginacion(usuariosFiltrados.length, 10, `${busqueda}|${filtroRol}`)
   const editando = form.id !== null
 
   async function cargarTodo() {
@@ -245,10 +259,23 @@ export default function UsuariosPage() {
       )}
 
       {!cargando && usuarios.length > 0 && (
+        <BarraFiltros
+          busqueda={busqueda}
+          onBusqueda={setBusqueda}
+          placeholderBusqueda="Buscar por nombre o correo…"
+          filtros={[{ id: 'filtro-rol', value: filtroRol, onChange: setFiltroRol, opciones: ROLES_FILTRO }]}
+        />
+      )}
+
+      {!cargando && usuarios.length > 0 && usuariosFiltrados.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">Ningún usuario coincide con el filtro.</Tarjeta>
+      )}
+
+      {!cargando && usuariosFiltrados.length > 0 && (
         <>
           {/* Celular: una tarjeta por usuario. */}
           <ul className="grid gap-3 sm:hidden">
-            {pag.slice(usuarios).map((u) => (
+            {pag.slice(usuariosFiltrados).map((u) => (
               <li key={u.id}>
                 <Tarjeta className="p-4">
                   <p className="font-medium break-words">{u.name}</p>
@@ -289,7 +316,7 @@ export default function UsuariosPage() {
                 </tr>
               </thead>
               <tbody>
-                {pag.slice(usuarios).map((u) => (
+                {pag.slice(usuariosFiltrados).map((u) => (
                   <Fila key={u.id}>
                     <Td>{u.name}</Td>
                     <Td className="text-texto-sec">{u.email}</Td>

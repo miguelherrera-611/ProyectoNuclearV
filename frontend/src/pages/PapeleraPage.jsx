@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import BarraFiltros from '../components/BarraFiltros'
 import ConfirmacionEliminar from '../components/ConfirmacionEliminar'
 import Paginador from '../components/Paginador'
 import { Aviso, BarraCarga, Boton, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
@@ -11,6 +12,11 @@ const NOMBRE_TIPO = {
   observaciones: 'Observación',
   usuarios: 'Usuario',
 }
+
+const OPCIONES_TIPO = [
+  { valor: '', etiqueta: 'Todos los tipos' },
+  ...Object.entries(NOMBRE_TIPO).map(([valor, etiqueta]) => ({ valor, etiqueta })),
+]
 
 function formatearFecha(iso) {
   return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -33,7 +39,14 @@ export default function PapeleraPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
-  const pag = usePaginacion(items.length, 10)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroTipo, setFiltroTipo] = useState('')
+  const termino = busqueda.trim().toLowerCase()
+  const itemsFiltrados = items.filter(
+    (i) => (filtroTipo === '' || i.tipo === filtroTipo) && i.descripcion.toLowerCase().includes(termino),
+  )
+
+  const pag = usePaginacion(itemsFiltrados.length, 10, `${busqueda}|${filtroTipo}`)
 
   async function cargar() {
     setCargando(true)
@@ -107,6 +120,19 @@ export default function PapeleraPage() {
       )}
 
       {!cargando && items.length > 0 && (
+        <BarraFiltros
+          busqueda={busqueda}
+          onBusqueda={setBusqueda}
+          placeholderBusqueda="Buscar por descripción…"
+          filtros={[{ id: 'filtro-tipo', value: filtroTipo, onChange: setFiltroTipo, opciones: OPCIONES_TIPO }]}
+        />
+      )}
+
+      {!cargando && items.length > 0 && itemsFiltrados.length === 0 && (
+        <Tarjeta className="p-6 text-texto-sec">Nada en la papelera coincide con el filtro.</Tarjeta>
+      )}
+
+      {!cargando && itemsFiltrados.length > 0 && (
         <Tabla etiqueta="Papelera" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
           <thead>
             <tr>
@@ -118,7 +144,7 @@ export default function PapeleraPage() {
             </tr>
           </thead>
           <tbody>
-            {pag.slice(items).map((item) => {
+            {pag.slice(itemsFiltrados).map((item) => {
               const dias = diasRestantes(item.se_purga_en)
               return (
                 <Fila key={`${item.tipo}-${item.id}`}>

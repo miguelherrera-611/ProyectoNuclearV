@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import BarraFiltros from '../components/BarraFiltros'
 import { Aviso, BarraCarga, Fila, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 
 const ESTILO_FOCO = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco'
@@ -15,13 +16,26 @@ const NOMBRE_ACCION = {
   eliminar_permanente: 'Eliminó para siempre',
 }
 
+const OPCIONES_ENTIDAD = [
+  { valor: '', etiqueta: 'Todos los tipos' },
+  { valor: 'Producto', etiqueta: 'Producto' },
+  { valor: 'Observacion', etiqueta: 'Observación' },
+  { valor: 'Usuario', etiqueta: 'Usuario' },
+]
+
+const OPCIONES_ACCION = [
+  { valor: '', etiqueta: 'Todas las acciones' },
+  ...Object.entries(NOMBRE_ACCION).map(([valor, etiqueta]) => ({ valor, etiqueta })),
+]
+
 function formatearFecha(iso) {
   return new Date(iso).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-// Server-paginado a propósito (distinto a usePaginacion/Paginador, que
-// paginan en el navegador una lista ya completa): la auditoría crece sin
-// límite con el tiempo, así que acá cada página se pide al backend.
+// Server-paginado Y server-filtrado a propósito (distinto a
+// usePaginacion/Paginador, que trabajan sobre una lista ya traída completa):
+// la auditoría crece sin límite con el tiempo, así que cada página y cada
+// filtro se piden al backend en vez de recortar algo que ya está en memoria.
 export default function AuditoriaPage() {
   const { token, user } = useAuth()
   const puedeVer = user?.permisos?.includes('auditoria.ver')
@@ -31,13 +45,39 @@ export default function AuditoriaPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroEntidad, setFiltroEntidad] = useState('')
+  const [filtroAccion, setFiltroAccion] = useState('')
+
+  // Cambiar cualquier filtro vuelve a la página 1 ahí mismo (no con un
+  // efecto aparte) — si no, se puede quedar "atascado" en una página que ya
+  // no existe para el filtro nuevo.
+  function cambiarBusqueda(valor) {
+    setBusqueda(valor)
+    setPagina(1)
+  }
+  function cambiarFiltroEntidad(valor) {
+    setFiltroEntidad(valor)
+    setPagina(1)
+  }
+  function cambiarFiltroAccion(valor) {
+    setFiltroAccion(valor)
+    setPagina(1)
+  }
+
   useEffect(() => {
     if (!puedeVer) return
 
     async function cargar() {
       setCargando(true)
       try {
-        setRespuesta(await api.auditoria.listar(token, pagina))
+        setRespuesta(
+          await api.auditoria.listar(token, pagina, {
+            entidad: filtroEntidad,
+            accion: filtroAccion,
+            buscar: busqueda,
+          }),
+        )
       } catch (err) {
         setError(err.message)
       } finally {
@@ -46,7 +86,7 @@ export default function AuditoriaPage() {
     }
 
     cargar()
-  }, [token, pagina, puedeVer])
+  }, [token, pagina, puedeVer, busqueda, filtroEntidad, filtroAccion])
 
   if (!puedeVer) {
     return (
@@ -58,16 +98,30 @@ export default function AuditoriaPage() {
   }
 
   const registros = respuesta?.data ?? []
+  const hayFiltros = busqueda || filtroEntidad || filtroAccion
 
   return (
     <div>
       <Titulo subtitulo="Quién hizo qué, y cuándo, sobre Productos, Observaciones y Usuarios.">Auditoría</Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
+
+      <BarraFiltros
+        busqueda={busqueda}
+        onBusqueda={cambiarBusqueda}
+        placeholderBusqueda="Buscar por descripción…"
+        filtros={[
+          { id: 'filtro-entidad', value: filtroEntidad, onChange: cambiarFiltroEntidad, opciones: OPCIONES_ENTIDAD },
+          { id: 'filtro-accion', value: filtroAccion, onChange: cambiarFiltroAccion, opciones: OPCIONES_ACCION },
+        ]}
+      />
+
       {cargando && <BarraCarga etiqueta="Cargando la auditoría…" />}
 
       {!cargando && registros.length === 0 && (
-        <Tarjeta className="p-6 text-texto-sec">Todavía no hay nada registrado.</Tarjeta>
+        <Tarjeta className="p-6 text-texto-sec">
+          {hayFiltros ? 'Nada coincide con el filtro.' : 'Todavía no hay nada registrado.'}
+        </Tarjeta>
       )}
 
       {!cargando && registros.length > 0 && (
