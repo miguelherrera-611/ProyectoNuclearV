@@ -66,11 +66,20 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
 
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row">
-      <div className="relative size-44 shrink-0">
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        <div className="text-center">
+          <span className="font-display text-xl font-bold" style={{ color: texto.texto }}>
+            {formatearUnidades(total)}
+          </span>
+          <span className="block text-[10px] font-bold uppercase tracking-wide" style={{ color: texto.secundario }}>
+            unidades proyectadas
+          </span>
+        </div>
+
         <svg
           ref={svgRef}
           viewBox="0 0 280 280"
-          className="size-full"
+          className="size-44"
           role="img"
           aria-label="Proporción de cada producto en el total proyectado, coloreada por estado"
         >
@@ -88,15 +97,8 @@ export default function AnilloProduccion({ productos, total, variacionTotal }) {
             </path>
           ))}
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-          <span className="font-display text-xl font-bold leading-tight" style={{ color: texto.texto }}>
-            {formatearUnidades(total)}
-          </span>
-          <span className="mt-0.5 text-[9px] font-bold uppercase leading-tight tracking-wide" style={{ color: texto.secundario }}>
-            unidades proyectadas
-          </span>
-          <Variacion porcentaje={variacionTotal} sufijo="vs. mes anterior" />
-        </div>
+
+        <Variacion porcentaje={variacionTotal} sufijo="vs. mes anterior" />
       </div>
 
       <ul className="flex w-full flex-col gap-2">
