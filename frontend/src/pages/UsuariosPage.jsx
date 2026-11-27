@@ -35,6 +35,7 @@ export default function UsuariosPage() {
   const [catalogo, setCatalogo] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
 
   // La lista es lo primero que se ve; el formulario solo aparece al pedirlo
   // (botón "Crear cuenta" o "Editar" en una fila), no de entrada.
@@ -131,6 +132,7 @@ export default function UsuariosPage() {
   async function handleGuardar(event) {
     event.preventDefault()
     setErrorForm('')
+    setExito('')
 
     if (!form.name || !form.email || (!editando && !form.password)) {
       setErrorForm('Completa nombre, correo' + (editando ? '' : ' y contraseña') + '.')
@@ -152,6 +154,7 @@ export default function UsuariosPage() {
       } else {
         await api.usuarios.crear(token, datos)
       }
+      setExito(editando ? `Cambios guardados para ${form.name}.` : `Cuenta creada para ${form.name}.`)
       setForm(FORMULARIO_VACIO)
       limpiarAvatarElegido()
       setMostrarFormulario(false)
@@ -168,9 +171,11 @@ export default function UsuariosPage() {
   async function confirmarEliminar() {
     const usuario = usuarioAEliminar
     setUsuarioAEliminar(null)
+    setError('')
     try {
       await api.usuarios.eliminar(token, usuario.id)
       await cargarTodo()
+      setExito(`"${usuario.name}" se eliminó y quedó en la papelera.`)
     } catch (err) {
       setError(err.message)
     }
@@ -203,6 +208,7 @@ export default function UsuariosPage() {
       </Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
+      {exito && <Aviso tipo="exito" className="mb-6">{exito}</Aviso>}
 
       {mostrarFormulario && (
         <Tarjeta className="mb-6 p-4 sm:p-6">

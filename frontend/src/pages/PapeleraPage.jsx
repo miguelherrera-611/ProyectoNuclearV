@@ -38,6 +38,7 @@ export default function PapeleraPage() {
   const [items, setItems] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
 
   const [busqueda, setBusqueda] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
@@ -65,9 +66,11 @@ export default function PapeleraPage() {
   }, [])
 
   async function handleRestaurar(item) {
+    setError('')
     try {
       await api.papelera.restaurar(token, item.tipo, item.id)
       await cargar()
+      setExito(`"${item.descripcion}" se restauró.`)
     } catch (err) {
       setError(err.message)
     }
@@ -87,9 +90,11 @@ export default function PapeleraPage() {
   async function confirmarEliminarPermanente(password) {
     setEliminandoPermanente(true)
     try {
+      const descripcion = itemAEliminarPermanente.descripcion
       await api.papelera.eliminarPermanente(token, itemAEliminarPermanente.tipo, itemAEliminarPermanente.id, password)
       setItemAEliminarPermanente(null)
       await cargar()
+      setExito(`"${descripcion}" se eliminó para siempre.`)
     } catch (err) {
       setErrorPermanente(err.message)
     } finally {
@@ -113,6 +118,7 @@ export default function PapeleraPage() {
       </Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
+      {exito && <Aviso tipo="exito" className="mb-6">{exito}</Aviso>}
       {cargando && <BarraCarga etiqueta="Cargando la papelera…" />}
 
       {!cargando && items.length === 0 && (

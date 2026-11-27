@@ -19,6 +19,7 @@ export default function ProductosPage() {
   const [productos, setProductos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
 
   const [busqueda, setBusqueda] = useState('')
   const termino = busqueda.trim().toLowerCase()
@@ -53,6 +54,7 @@ export default function ProductosPage() {
   async function handleCrear(event) {
     event.preventDefault()
     setErrorForm('')
+    setExito('')
 
     if (!codigo || !nombre) {
       setErrorForm('Completa código y nombre.')
@@ -65,6 +67,7 @@ export default function ProductosPage() {
       setCodigo('')
       setNombre('')
       await cargarProductos()
+      setExito('Producto agregado.')
     } catch (err) {
       setErrorForm(err.message)
     } finally {
@@ -79,9 +82,11 @@ export default function ProductosPage() {
   async function confirmarEliminar() {
     const producto = productoAEliminar
     setProductoAEliminar(null)
+    setError('')
     try {
       await api.productos.eliminar(token, producto.id)
       await cargarProductos()
+      setExito(`"${producto.nombre}" se eliminó y quedó en la papelera.`)
     } catch (err) {
       setError(err.message)
     }
@@ -92,6 +97,7 @@ export default function ProductosPage() {
       <Titulo subtitulo="Catálogo de productos y acceso a su histórico de demanda.">Productos</Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
+      {exito && <Aviso tipo="exito" className="mb-6">{exito}</Aviso>}
 
       {puedeCrear && (
         <Tarjeta data-tour="productos-crear" className="mb-6 p-4 sm:p-6">

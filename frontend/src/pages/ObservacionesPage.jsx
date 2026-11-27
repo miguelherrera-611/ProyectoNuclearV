@@ -22,6 +22,7 @@ export default function ObservacionesPage() {
   const [observaciones, setObservaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState('')
 
   const [filtroAnio, setFiltroAnio] = useState('')
   const anios = [...new Set(observaciones.map((o) => o.periodo.slice(0, 4)))].sort().reverse()
@@ -61,6 +62,7 @@ export default function ObservacionesPage() {
   async function handleCapturar(event) {
     event.preventDefault()
     setErrorForm('')
+    setExito('')
 
     if (!mes || cantidad === '') {
       setErrorForm('Completa el mes y la cantidad.')
@@ -78,6 +80,7 @@ export default function ObservacionesPage() {
       setMes('')
       setCantidad('')
       await cargar()
+      setExito('Dato guardado.')
     } catch (err) {
       setErrorForm(err.message)
     } finally {
@@ -90,9 +93,11 @@ export default function ObservacionesPage() {
   async function confirmarEliminar() {
     const observacion = observacionAEliminar
     setObservacionAEliminar(null)
+    setError('')
     try {
       await api.observaciones.eliminar(token, observacion.id)
       await cargar()
+      setExito('Observación eliminada. Quedó en la papelera.')
     } catch (err) {
       setError(err.message)
     }
@@ -128,6 +133,7 @@ export default function ObservacionesPage() {
       </Titulo>
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
+      {exito && <Aviso tipo="exito" className="mb-6">{exito}</Aviso>}
 
       {observacionesFiltradas.length > 0 && (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">

@@ -25,11 +25,16 @@ function FlujoDeAcceso() {
   const { completeLoginWithToken } = useAuth()
   const [step, setStep] = useState('login')
   const [challenge, setChallenge] = useState(null)
+  const [mensaje, setMensaje] = useState('')
 
   if (step === 'login') {
     return (
       <LoginPage
-        onForgotPassword={() => setStep('forgot-password')}
+        mensaje={mensaje}
+        onForgotPassword={() => {
+          setMensaje('')
+          setStep('forgot-password')
+        }}
         onSubmitted={({ challengeToken, devCode, token }) => {
           // Interruptor AUTH_TWO_FACTOR_ENABLED=false: el backend ya mandó
           // el token, sin challenge — nos saltamos la pantalla de 2FA.
@@ -45,7 +50,15 @@ function FlujoDeAcceso() {
   }
 
   if (step === 'forgot-password') {
-    return <OlvidePasswordPage onBack={() => setStep('login')} onCompleted={() => setStep('login')} />
+    return (
+      <OlvidePasswordPage
+        onBack={() => setStep('login')}
+        onCompleted={() => {
+          setMensaje('Contraseña actualizada. Ya puedes iniciar sesión con tu contraseña nueva.')
+          setStep('login')
+        }}
+      />
+    )
   }
 
   return (

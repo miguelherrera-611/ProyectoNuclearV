@@ -10,7 +10,14 @@ export const PASOS = [
     selectores: ['[data-tour="inicio-resumen"]'],
     titulo: 'Pronóstico automático de cada producto',
     descripcion:
-      'Por cada producto, el sistema calcula los 4 métodos disponibles y te muestra aquí el que tiene menor error (MAD). "En meta" significa que la señal de rastreo está dentro de ±4; si dice "Revisar", el pronóstico se está desviando y conviene recalcularlo en Pronóstico con otro método o parámetros.',
+      'Por cada producto, el sistema calcula los 4 métodos disponibles y usa el que tiene menor error (MAD). El anillo muestra cuánto pesa cada producto en el total proyectado; el color es el mismo en todas partes: verde "en meta" (señal de rastreo dentro de ±4), ámbar "revisar" (el pronóstico se está desviando — prueba otro método o parámetros en Pronóstico).',
+  },
+  {
+    ruta: '/',
+    selectores: ['[data-tour="inicio-mapa-riesgo"]'],
+    titulo: 'Mapa de riesgo',
+    descripcion:
+      'Cada producto ubicado por su señal de rastreo (vertical) y cuánto varió este mes (horizontal) — la franja verde es la "zona segura" (±4). Lo que hay que revisar literalmente se sale de la franja; el tamaño de la burbuja es el volumen proyectado.',
   },
   {
     ruta: '/',

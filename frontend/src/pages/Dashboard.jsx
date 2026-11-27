@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
+import AnilloProduccion from '../components/AnilloProduccion'
 import GraficoLineas from '../components/GraficoLineas'
+import MapaDeRiesgo from '../components/MapaDeRiesgo'
 import Paginador from '../components/Paginador'
 import { EncabezadoReporte, PieReporte } from '../components/Reporte'
-import { Aviso, BarraCarga, Boton, Estado, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo, Variacion } from '../components/ui'
+import { Aviso, BarraCarga, Boton, Estado, Fila, Kpi, Tabla, Tarjeta, Td, Th, Titulo } from '../components/ui'
 import { usePaginacion } from '../components/usePaginacion'
 import { formatearNumero, formatearPeriodo, formatearUnidades } from '../format'
 import { colorDeProducto } from '../tema/colores'
@@ -75,12 +77,17 @@ export default function Dashboard() {
     const siguiente = filas.at(-1)
     const ultimoReal = filas.findLast((f) => f.real !== null)
     const senal = mejor.resultado.metricas.senal_rastreo
+    const real = ultimoReal?.real ?? null
     return {
       producto,
       metodo: mejor.nombre,
       periodo: siguiente.periodo,
       pronostico: siguiente.pronostico,
-      ultimoReal: ultimoReal?.real ?? null,
+      ultimoReal: real,
+      // % de cambio del pronóstico contra el último mes real — por
+      // producto, a diferencia de "variacion" de abajo que es el total.
+      variacion: real > 0 ? ((siguiente.pronostico - real) / real) * 100 : null,
+      senal,
       mad: mejor.resultado.metricas.mad,
       estado: senal !== null && Math.abs(senal) <= LIMITE_SENAL ? 'en_meta' : 'revisar',
     }
@@ -89,7 +96,6 @@ export default function Dashboard() {
   const totalProyectado = filasTabla.reduce((suma, f) => suma + (f.pronostico ?? 0), 0)
   const totalUltimoReal = filasTabla.reduce((suma, f) => suma + (f.ultimoReal ?? 0), 0)
   const variacion = totalUltimoReal > 0 ? ((totalProyectado - totalUltimoReal) / totalUltimoReal) * 100 : null
-  const enMeta = filasTabla.filter((f) => f.estado === 'en_meta').length
   const mesesHistorico = Math.max(0, ...resumen.map(({ mejor }) => mejor.resultado.filas.filter((f) => f.real !== null).length))
 
   // Una fila por mes con la demanda real de cada producto (últimos 24 meses).
@@ -158,17 +164,36 @@ export default function Dashboard() {
 
       {!cargando && resumen.length > 0 && (
         <>
-          <div data-tour="inicio-resumen" className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Kpi etiqueta="Unidades proyectadas" valor={formatearUnidades(totalProyectado)}>
-              <Variacion porcentaje={variacion} sufijo="vs. último mes real" />
-            </Kpi>
-            <Kpi etiqueta="Productos en meta" valor={`${enMeta} de ${filasTabla.length}`}>
-              <p className="mt-3 text-sm text-texto-sec">Señal de rastreo dentro de ±{LIMITE_SENAL}</p>
-            </Kpi>
+          <div data-tour="inicio-resumen" className="mb-6 grid gap-4 lg:grid-cols-3">
+            <Tarjeta className="p-5 sm:p-6 lg:col-span-2">
+              <p className="mb-5 text-xs font-bold uppercase tracking-wide text-texto-sec">Producción proyectada por producto</p>
+              <AnilloProduccion
+                productos={filasTabla.map((f) => ({ id: f.producto.id, nombre: f.producto.nombre, volumen: f.pronostico ?? 0, estado: f.estado }))}
+                total={totalProyectado}
+                variacionTotal={variacion}
+              />
+            </Tarjeta>
             <Kpi etiqueta="Meses de histórico" valor={mesesHistorico}>
               <p className="mt-3 text-sm text-texto-sec">Base del cálculo de cada método</p>
             </Kpi>
           </div>
+
+          <Tarjeta data-tour="inicio-mapa-riesgo" className="mb-6 p-3 sm:p-6">
+            <h2 className="mb-1 px-1 font-display text-lg font-bold">Mapa de riesgo</h2>
+            <p className="mb-4 px-1 text-sm text-texto-sec">
+              Señal de rastreo (vertical, zona segura ±{LIMITE_SENAL}) vs. variación mensual (horizontal) · el tamaño es el volumen
+            </p>
+            <MapaDeRiesgo
+              productos={filasTabla.map((f) => ({
+                id: f.producto.id,
+                nombre: f.producto.nombre,
+                volumen: f.pronostico ?? 0,
+                senal: f.senal,
+                variacion: f.variacion ?? 0,
+                estado: f.estado,
+              }))}
+            />
+          </Tarjeta>
 
           <Tarjeta data-tour="inicio-grafico" className="mb-6 p-3 sm:p-6">
             <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda de los últimos {MESES_GRAFICO} meses</h2>

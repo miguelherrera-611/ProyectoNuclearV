@@ -45,7 +45,7 @@ function Enlaces({ onNavegar }) {
   }
 
   return (
-    <nav aria-label="Principal" className="flex flex-1 flex-col gap-1 px-3">
+    <nav aria-label="Principal" className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
       {enlaces.map(({ a, texto, exacto, Icono }) => (
         <NavLink key={a} to={a} end={exacto} onClick={onNavegar} className={claseEnlace}>
           <Icono className="size-5 shrink-0" />
@@ -89,8 +89,11 @@ function BotonCerrarSesion({ onNavegar }) {
 export default function Sidebar({ abierto, alCerrar }) {
   return (
     <>
-      {/* Desktop: columna fija, siempre visible, pegada a la izquierda. */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r-2 border-barra-linea bg-barra py-6 text-barra-texto md:flex print:hidden">
+      {/* Desktop: columna fija, siempre visible, pegada a la izquierda —
+          "sticky" + la altura exacta del viewport, para que no se desplace
+          junto con el contenido de la derecha (si no, "Cerrar sesión" se
+          queda abajo del todo, fuera de vista, en páginas largas). */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r-2 border-barra-linea bg-barra py-6 text-barra-texto md:flex print:hidden">
         <div className="mb-6 px-4">
           <span className="font-display text-lg font-bold text-barra-texto">JR Forecast</span>
         </div>

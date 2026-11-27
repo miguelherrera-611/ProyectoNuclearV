@@ -28,6 +28,7 @@ function SeccionFoto({ user, token, actualizarUsuario }) {
   const [previa, setPrevia] = useState(null)
   const [archivo, setArchivo] = useState(null)
   const [error, setError] = useState('')
+  const [exito, setExito] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
   function elegirArchivo(event) {
@@ -36,16 +37,19 @@ function SeccionFoto({ user, token, actualizarUsuario }) {
     setArchivo(elegido)
     setPrevia(URL.createObjectURL(elegido))
     setError('')
+    setExito(false)
   }
 
   async function guardar() {
     setEnviando(true)
     setError('')
+    setExito(false)
     try {
       const data = await api.perfil.subirAvatar(token, archivo)
       actualizarUsuario({ avatar_url: data.avatar_url })
       setArchivo(null)
       setPrevia(null)
+      setExito(true)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -81,6 +85,7 @@ function SeccionFoto({ user, token, actualizarUsuario }) {
         </div>
       </div>
       {enviando && <BarraCarga etiqueta="Subiendo…" />}
+      {exito && <Aviso tipo="exito" className="mt-4">Foto actualizada.</Aviso>}
       {error && <Aviso className="mt-4">{error}</Aviso>}
     </Tarjeta>
   )
@@ -141,12 +146,14 @@ function SeccionCorreo({ user, token, actualizarUsuario }) {
   const [devCode, setDevCode] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [exito, setExito] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
   function empezar() {
     setPaso('solicitar')
     setNuevoCorreo('')
     setError('')
+    setExito(false)
   }
 
   function cancelar() {
@@ -190,6 +197,7 @@ function SeccionCorreo({ user, token, actualizarUsuario }) {
     try {
       const data = await api.perfil.confirmarCambioCorreo(token, challengeToken, code)
       actualizarUsuario({ email: data.email })
+      setExito(true)
       setPaso('mostrar')
     } catch (err) {
       setError(err.message)
@@ -209,6 +217,7 @@ function SeccionCorreo({ user, token, actualizarUsuario }) {
           <Boton variante="secundario" onClick={empezar}>
             Cambiar correo
           </Boton>
+          {exito && <Aviso tipo="exito" className="mt-4">Correo actualizado.</Aviso>}
         </>
       )}
 

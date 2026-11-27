@@ -5,7 +5,7 @@ import { Aviso, BarraCarga, Boton } from '../components/ui'
 
 // Paso 1 del login: si las credenciales son correctas, el backend no
 // entrega token todavía — manda un código por correo.
-export default function LoginPage({ onSubmitted, onForgotPassword }) {
+export default function LoginPage({ onSubmitted, onForgotPassword, mensaje }) {
   const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,6 +45,7 @@ export default function LoginPage({ onSubmitted, onForgotPassword }) {
       <form onSubmit={handleSubmit} noValidate>
         <h1 className="mb-8 font-display text-3xl font-bold sm:text-4xl">Iniciar sesión</h1>
 
+        {mensaje && <Aviso tipo="exito" className="mb-6">{mensaje}</Aviso>}
         {errors.form && <Aviso className="mb-6">{errors.form}</Aviso>}
 
         <CampoAcceso
