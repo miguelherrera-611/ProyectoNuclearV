@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import PantallaAcceso, { CampoAcceso } from '../components/PantallaAcceso'
 import { Aviso, BarraCarga, Boton } from '../components/ui'
+import { esCorreoValido } from '../validacion'
 
 // Paso 1 del login: si las credenciales son correctas, el backend no
 // entrega token todavía — manda un código por correo.
@@ -20,6 +21,10 @@ export default function LoginPage({ onSubmitted, onForgotPassword, mensaje }) {
     // validar el backend.
     if (!email) {
       setErrors({ email: 'Ingresa tu correo.' })
+      return
+    }
+    if (!esCorreoValido(email)) {
+      setErrors({ email: 'Ingresa un correo válido (debe tener @ y un dominio, ej. nombre@empresa.com).' })
       return
     }
     if (!password) {
@@ -53,6 +58,7 @@ export default function LoginPage({ onSubmitted, onForgotPassword, mensaje }) {
           etiqueta="Correo corporativo"
           type="email"
           autoComplete="username"
+          maxLength={255}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
@@ -63,6 +69,7 @@ export default function LoginPage({ onSubmitted, onForgotPassword, mensaje }) {
           etiqueta="Contraseña"
           type="password"
           autoComplete="current-password"
+          maxLength={72}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}

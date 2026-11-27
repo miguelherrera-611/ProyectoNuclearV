@@ -124,7 +124,7 @@ function SeccionNombre({ user, token, actualizarUsuario }) {
       <h2 className="mb-4 font-display text-lg font-bold">Nombre</h2>
       <form onSubmit={handleSubmit}>
         <Campo id="perfil-nombre" etiqueta="Nombre completo">
-          <Entrada id="perfil-nombre" value={name} onChange={(e) => setName(e.target.value)} />
+          <Entrada id="perfil-nombre" maxLength={150} value={name} onChange={(e) => setName(e.target.value)} />
         </Campo>
         <Boton type="submit" disabled={enviando} className="mt-4">
           {enviando ? 'Guardando…' : 'Guardar nombre'}
@@ -231,6 +231,7 @@ function SeccionCorreo({ user, token, actualizarUsuario }) {
             <Entrada
               id="correo-nuevo"
               type="email"
+              maxLength={150}
               value={nuevoCorreo}
               onChange={(e) => setNuevoCorreo(e.target.value)}
               autoComplete="email"
@@ -331,6 +332,7 @@ function SeccionPassword({ token }) {
           <Entrada
             id="password-actual"
             type="password"
+            maxLength={72}
             value={passwordActual}
             onChange={(e) => setPasswordActual(e.target.value)}
             autoComplete="current-password"
@@ -340,6 +342,7 @@ function SeccionPassword({ token }) {
           <Entrada
             id="password-nueva-perfil"
             type="password"
+            maxLength={72}
             value={passwordNueva}
             onChange={(e) => setPasswordNueva(e.target.value)}
             autoComplete="new-password"
@@ -349,6 +352,7 @@ function SeccionPassword({ token }) {
           <Entrada
             id="password-confirmar"
             type="password"
+            maxLength={72}
             value={confirmacion}
             onChange={(e) => setConfirmacion(e.target.value)}
             autoComplete="new-password"

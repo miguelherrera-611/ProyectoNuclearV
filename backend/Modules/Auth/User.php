@@ -37,11 +37,6 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ADMINISTRADOR;
     }
 
-    // Red de seguridad a nivel de modelo: cualquier usuario que se cree sin
-    // "permisos" explícitos (factories, tinker, un seeder futuro...) arranca
-    // con los default de su rol en vez de quedar sin ningún permiso. El
-    // UsuarioController ya los manda explícitos siempre; esto cubre todo lo
-    // demás que crea usuarios.
     protected static function booted(): void
     {
         static::creating(function (self $user) {

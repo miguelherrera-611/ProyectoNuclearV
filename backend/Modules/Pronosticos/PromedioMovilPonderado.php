@@ -5,15 +5,7 @@ namespace Modules\Pronosticos;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
-/**
- * P2 — Promedio Móvil Ponderado: F(t) = ROUND(w1·D(t-1) + ... + wn·D(t-n), 0),
- * tal como lo define el ejemplo del cliente (hoja "Ejemplo2" de
- * Pronosticos de producción ejemplo.xlsx). w1 (K0 en el Excel) es el peso de
- * la demanda más reciente; n sale de la cantidad de pesos.
- *
- * El redondeo a unidades enteras es el del Excel, para coincidir con el
- * benchmark del cliente.
- */
+
 class PromedioMovilPonderado implements MetodoPronostico
 {
     public function calcular(array $observaciones, array $parametros): array

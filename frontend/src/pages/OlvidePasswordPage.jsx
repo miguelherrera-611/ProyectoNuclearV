@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../api'
 import PantallaAcceso, { CampoAcceso } from '../components/PantallaAcceso'
 import { Aviso, BarraCarga, Boton } from '../components/ui'
+import { esCorreoValido } from '../validacion'
 
 // Dos pasos propios (igual de espíritu que Login → TwoFactor, pero sin
 // sesión todavía): pedir el código por correo, y con ese código ya puesto
@@ -23,6 +24,10 @@ export default function OlvidePasswordPage({ onBack, onCompleted }) {
 
     if (!email) {
       setError('Ingresa tu correo.')
+      return
+    }
+    if (!esCorreoValido(email)) {
+      setError('Ingresa un correo válido (debe tener @ y un dominio, ej. nombre@empresa.com).')
       return
     }
 
@@ -77,6 +82,7 @@ export default function OlvidePasswordPage({ onBack, onCompleted }) {
             etiqueta="Correo corporativo"
             type="email"
             autoComplete="username"
+            maxLength={255}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -126,6 +132,7 @@ export default function OlvidePasswordPage({ onBack, onCompleted }) {
           etiqueta="Contraseña nueva"
           type="password"
           autoComplete="new-password"
+          maxLength={72}
           value={passwordNueva}
           onChange={(e) => setPasswordNueva(e.target.value)}
         />

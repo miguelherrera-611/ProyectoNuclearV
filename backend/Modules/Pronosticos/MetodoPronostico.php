@@ -2,9 +2,7 @@
 
 namespace Modules\Pronosticos;
 
-// Contrato para cualquier método de pronóstico (P1–P6 del documento de
-// requisitos) — así agregar un método nuevo no toca los que ya existen
-// (RNF-21, patrón Strategy), sin montar una capa de más.
+
 interface MetodoPronostico
 {
     /**

@@ -50,8 +50,6 @@ class UsuarioController
         // de ahí en adelante son propios de este usuario (ver Permisos).
         $permisos = Permisos::filtrarValidas($data['permisos'] ?? Permisos::defaultParaRol($data['role']));
 
-        // El cast "hashed" del modelo (User::casts()) guarda el bcrypt solo;
-        // nunca el texto plano llega a la base de datos.
         $usuario = User::create([
             'name' => $data['name'],
             'email' => $data['email'],

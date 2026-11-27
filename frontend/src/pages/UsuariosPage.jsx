@@ -230,6 +230,7 @@ export default function UsuariosPage() {
               <Campo id="nombre" etiqueta="Nombre">
                 <Entrada
                   id="nombre"
+                  maxLength={150}
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   autoComplete="name"
@@ -239,6 +240,7 @@ export default function UsuariosPage() {
                 <Entrada
                   id="correo"
                   type="email"
+                  maxLength={150}
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   autoComplete="email"
@@ -252,6 +254,7 @@ export default function UsuariosPage() {
                 <Entrada
                   id="password"
                   type="password"
+                  maxLength={72}
                   value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   autoComplete="new-password"

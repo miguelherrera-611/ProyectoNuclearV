@@ -80,6 +80,7 @@ export default function ConfirmacionEliminar({
               id="confirmacion-password"
               type="password"
               autoComplete="current-password"
+              maxLength={72}
               disabled={enviando}
               value={password}
               onChange={(e) => {

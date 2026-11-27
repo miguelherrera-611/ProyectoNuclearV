@@ -104,10 +104,10 @@ export default function ProductosPage() {
           <h2 className="mb-4 font-display text-lg font-bold">Nuevo producto</h2>
           <form onSubmit={handleCrear} className="grid gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
             <Campo id="codigo" etiqueta="Código">
-              <Entrada id="codigo" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              <Entrada id="codigo" maxLength={50} value={codigo} onChange={(e) => setCodigo(e.target.value)} />
             </Campo>
             <Campo id="nombre" etiqueta="Nombre">
-              <Entrada id="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+              <Entrada id="nombre" maxLength={150} value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </Campo>
             <Boton type="submit" disabled={enviando} className="w-full sm:w-auto">
               {enviando ? 'Agregando…' : 'Agregar producto'}
