@@ -6,9 +6,12 @@ const API_URL = import.meta.env.VITE_API_URL
 // Error propio para leer mensaje y código HTTP por separado en los
 // componentes.
 class ApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, payload) {
     super(message)
     this.status = status
+    // La importación de Excel manda una lista de errores por fila además
+    // del mensaje genérico (ImportacionObservacionesController::importar).
+    this.errores = payload?.errores ?? null
   }
 }
 
@@ -43,7 +46,7 @@ async function request(path, { method = 'GET', body, token, crudo = false } = {}
   const payload = await response.json().catch(() => null)
 
   if (!response.ok) {
-    throw new ApiError(payload?.message ?? 'Ocurrió un error inesperado.', response.status)
+    throw new ApiError(payload?.message ?? 'Ocurrió un error inesperado.', response.status, payload)
   }
 
   // El backend envuelve sus respuestas en { "data": ... } — se desenvuelve
@@ -79,6 +82,32 @@ export const api = {
     capturar: (token, { producto_id, periodo, cantidad }) =>
       request('/api/observaciones', { method: 'POST', body: { producto_id, periodo, cantidad }, token }),
     eliminar: (token, id) => request(`/api/observaciones/${id}`, { method: 'DELETE', token }),
+    // No usa request(): hace falta leer la respuesta como archivo (blob) y
+    // el nombre que manda el backend en Content-Disposition, no un JSON.
+    descargarPlantilla: async (token, productoId) => {
+      const response = await fetch(`${API_URL}/api/productos/${productoId}/observaciones/plantilla`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new ApiError(payload?.message ?? 'No se pudo descargar la plantilla.', response.status, payload)
+      }
+      const nombreArchivo = response.headers.get('Content-Disposition')?.match(/filename="?([^";]+)"?/)?.[1] ?? 'plantilla.xlsx'
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = nombreArchivo
+      document.body.appendChild(enlace)
+      enlace.click()
+      enlace.remove()
+      URL.revokeObjectURL(url)
+    },
+    importar: (token, productoId, archivo) => {
+      const form = new FormData()
+      form.append('archivo', archivo)
+      return request(`/api/productos/${productoId}/observaciones/importar`, { method: 'POST', body: form, token })
+    },
   },
 
   usuarios: {

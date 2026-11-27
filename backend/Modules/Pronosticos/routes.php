@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Pronosticos\ImportacionObservacionesController;
 use Modules\Pronosticos\ObservacionController;
 use Modules\Pronosticos\PronosticoController;
 
@@ -10,6 +11,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::middleware('can:observaciones.capturar')->post('/', [ObservacionController::class, 'store']);
         Route::middleware('can:observaciones.eliminar')->delete('/{observacion}', [ObservacionController::class, 'destroy']);
+    });
+
+    // Plantilla Excel (pre-llenada con lo que el producto ya tenga) e
+    // importación masiva desde esa misma plantilla — mismo permiso que
+    // capturar un solo mes, porque es exactamente eso, muchas veces.
+    Route::middleware('can:observaciones.capturar')->prefix('productos/{producto}/observaciones')->group(function () {
+        Route::get('/plantilla', [ImportacionObservacionesController::class, 'plantilla']);
+        Route::post('/importar', [ImportacionObservacionesController::class, 'importar']);
     });
 
     // Calcular no modifica nada (no persiste un "escenario" todavía, eso es

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth/AuthContext'
@@ -37,6 +37,12 @@ export default function ObservacionesPage() {
   const [cantidad, setCantidad] = useState('')
   const [errorForm, setErrorForm] = useState('')
   const [enviando, setEnviando] = useState(false)
+
+  const [descargandoPlantilla, setDescargandoPlantilla] = useState(false)
+  const [archivoImportar, setArchivoImportar] = useState(null)
+  const [importando, setImportando] = useState(false)
+  const [erroresImportar, setErroresImportar] = useState([])
+  const inputImportarRef = useRef(null)
 
   async function cargar() {
     setCargando(true)
@@ -85,6 +91,46 @@ export default function ObservacionesPage() {
       setErrorForm(err.message)
     } finally {
       setEnviando(false)
+    }
+  }
+
+  async function handleDescargarPlantilla() {
+    setDescargandoPlantilla(true)
+    setError('')
+    try {
+      await api.observaciones.descargarPlantilla(token, id)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setDescargandoPlantilla(false)
+    }
+  }
+
+  function elegirArchivoImportar(event) {
+    setArchivoImportar(event.target.files?.[0] ?? null)
+    setErroresImportar([])
+  }
+
+  async function handleImportar() {
+    setErroresImportar([])
+    setExito('')
+
+    if (!archivoImportar) {
+      setErroresImportar(['Elige el archivo de la plantilla llena.'])
+      return
+    }
+
+    setImportando(true)
+    try {
+      const data = await api.observaciones.importar(token, id, archivoImportar)
+      setArchivoImportar(null)
+      if (inputImportarRef.current) inputImportarRef.current.value = ''
+      await cargar()
+      setExito(`Se importaron ${data.total} meses: ${data.creados} nuevos, ${data.corregidos} corregidos.`)
+    } catch (err) {
+      setErroresImportar(err.errores ?? [err.message])
+    } finally {
+      setImportando(false)
     }
   }
 
@@ -165,6 +211,44 @@ export default function ObservacionesPage() {
             </Boton>
           </form>
           {errorForm && <Aviso className="mt-4">{errorForm}</Aviso>}
+        </Tarjeta>
+      )}
+
+      {puedeCapturar && (
+        <Tarjeta className="mb-6 p-4 sm:p-6">
+          <h2 className="mb-1 font-display text-lg font-bold">Importar desde Excel</h2>
+          <p className="mb-4 text-sm text-texto-sec">
+            La plantilla ya viene con los meses que este producto tenga — agrega los que falten abajo y vuelve a
+            subirla. Si hay un error en alguna fila, no se importa nada; corrígela y vuelve a intentar.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Boton type="button" variante="secundario" onClick={handleDescargarPlantilla} disabled={descargandoPlantilla}>
+              {descargandoPlantilla ? 'Descargando…' : 'Descargar plantilla'}
+            </Boton>
+            <input
+              ref={inputImportarRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={elegirArchivoImportar}
+            />
+            <Boton type="button" variante="secundario" onClick={() => inputImportarRef.current?.click()}>
+              {archivoImportar ? archivoImportar.name : 'Elegir archivo lleno'}
+            </Boton>
+            <Boton type="button" onClick={handleImportar} disabled={importando || !archivoImportar}>
+              {importando ? 'Importando…' : 'Importar'}
+            </Boton>
+          </div>
+          {erroresImportar.length > 0 && (
+            <div className="mt-4">
+              <Aviso>El archivo tiene errores — no se importó nada:</Aviso>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-texto-sec">
+                {erroresImportar.map((mensaje, i) => (
+                  <li key={i}>{mensaje}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Tarjeta>
       )}
 
