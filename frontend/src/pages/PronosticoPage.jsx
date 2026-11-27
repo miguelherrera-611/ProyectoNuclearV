@@ -134,7 +134,7 @@ export default function PronosticoPage() {
 
         <Tarjeta className="mb-6 p-4 sm:p-6">
           <form onSubmit={handleCalcular}>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div data-tour="pronostico-seleccion" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Campo id="producto" etiqueta="Producto" className="sm:col-span-2 lg:col-span-2">
                 <Desplegable
                   id="producto"
@@ -311,7 +311,7 @@ export default function PronosticoPage() {
               )}
             </div>
 
-            <Boton type="submit" disabled={calculando} className="mt-6 w-full sm:w-auto">
+            <Boton data-tour="pronostico-calcular" type="submit" disabled={calculando} className="mt-6 w-full sm:w-auto">
               {calculando ? 'Calculando…' : 'Calcular pronóstico'}
             </Boton>
             {calculando && <BarraCarga etiqueta="Calculando…" />}
@@ -327,7 +327,7 @@ export default function PronosticoPage() {
 
       {resultado && !resultado.estacional && (
         <>
-          <div className="mb-6 grid gap-4 lg:grid-cols-3">
+          <div data-tour="pronostico-resultados" className="mb-6 grid gap-4 lg:grid-cols-3">
             <Kpi etiqueta="Unidades proyectadas" valor={formatearUnidades(siguiente?.pronostico)}>
               <p className="mt-3 text-sm text-texto-sec">{siguiente && formatearPeriodo(siguiente.periodo)}</p>
             </Kpi>
@@ -341,50 +341,52 @@ export default function PronosticoPage() {
             </div>
           </div>
 
-          <Tarjeta className="mb-6 p-3 sm:p-6">
-            <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda real vs. pronóstico</h2>
-            <p className="mb-4 px-1 text-sm text-texto-sec">
-              {productoCalculado?.nombre} · {METODOS[calculado.metodo]}
-            </p>
-            <GraficoLineas
-              descripcion={`Demanda real y pronóstico de ${productoCalculado?.nombre ?? 'el producto'}`}
-              datos={datosGrafico}
-              series={[
-                { clave: 'real', nombre: 'Demanda real', etiqueta: 'Real', color: colorProducto },
-                { clave: 'pronostico', nombre: 'Pronóstico', etiqueta: 'Pronóstico', color: colorProducto, discontinua: true },
-              ]}
-            />
-          </Tarjeta>
+          <div data-tour="pronostico-detalle">
+            <Tarjeta className="mb-6 p-3 sm:p-6">
+              <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda real vs. pronóstico</h2>
+              <p className="mb-4 px-1 text-sm text-texto-sec">
+                {productoCalculado?.nombre} · {METODOS[calculado.metodo]}
+              </p>
+              <GraficoLineas
+                descripcion={`Demanda real y pronóstico de ${productoCalculado?.nombre ?? 'el producto'}`}
+                datos={datosGrafico}
+                series={[
+                  { clave: 'real', nombre: 'Demanda real', etiqueta: 'Real', color: colorProducto },
+                  { clave: 'pronostico', nombre: 'Pronóstico', etiqueta: 'Pronóstico', color: colorProducto, discontinua: true },
+                ]}
+              />
+            </Tarjeta>
 
-          <Tabla
-            etiqueta="Detalle del pronóstico por periodo"
-            pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
-          >
-            <thead>
-              <tr>
-                <Th>Periodo</Th>
-                <Th numero>D</Th>
-                <Th numero>F</Th>
-                <Th numero>E</Th>
-                <Th numero>|E|</Th>
-                <Th numero>E²</Th>
-                <Th numero>|E|/D</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {resultado.filas.map((f, i) => (
-                <Fila key={i} className={pag.claseFila(i)}>
-                  <Td className="whitespace-nowrap">{formatearPeriodo(f.periodo)}</Td>
-                  <Td numero>{formatearUnidades(f.real)}</Td>
-                  <Td numero>{formatearUnidades(f.pronostico, 2)}</Td>
-                  <Td numero>{formatearUnidades(f.error, 2)}</Td>
-                  <Td numero>{formatearUnidades(f.error_abs, 2)}</Td>
-                  <Td numero>{formatearNumero(f.error_cuadrado)}</Td>
-                  <Td numero>{formatearPorcentaje(f.error_relativo !== null ? f.error_relativo * 100 : null)}</Td>
-                </Fila>
-              ))}
-            </tbody>
-          </Tabla>
+            <Tabla
+              etiqueta="Detalle del pronóstico por periodo"
+              pie={<Paginador {...pag} onCambiar={pag.setPagina} />}
+            >
+              <thead>
+                <tr>
+                  <Th>Periodo</Th>
+                  <Th numero>D</Th>
+                  <Th numero>F</Th>
+                  <Th numero>E</Th>
+                  <Th numero>|E|</Th>
+                  <Th numero>E²</Th>
+                  <Th numero>|E|/D</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultado.filas.map((f, i) => (
+                  <Fila key={i} className={pag.claseFila(i)}>
+                    <Td className="whitespace-nowrap">{formatearPeriodo(f.periodo)}</Td>
+                    <Td numero>{formatearUnidades(f.real)}</Td>
+                    <Td numero>{formatearUnidades(f.pronostico, 2)}</Td>
+                    <Td numero>{formatearUnidades(f.error, 2)}</Td>
+                    <Td numero>{formatearUnidades(f.error_abs, 2)}</Td>
+                    <Td numero>{formatearNumero(f.error_cuadrado)}</Td>
+                    <Td numero>{formatearPorcentaje(f.error_relativo !== null ? f.error_relativo * 100 : null)}</Td>
+                  </Fila>
+                ))}
+              </tbody>
+            </Tabla>
+          </div>
         </>
       )}
 

@@ -106,15 +106,17 @@ export default function AuditoriaPage() {
 
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
-      <BarraFiltros
-        busqueda={busqueda}
-        onBusqueda={cambiarBusqueda}
-        placeholderBusqueda="Buscar por descripción…"
-        filtros={[
-          { id: 'filtro-entidad', value: filtroEntidad, onChange: cambiarFiltroEntidad, opciones: OPCIONES_ENTIDAD },
-          { id: 'filtro-accion', value: filtroAccion, onChange: cambiarFiltroAccion, opciones: OPCIONES_ACCION },
-        ]}
-      />
+      <div data-tour="auditoria-filtros">
+        <BarraFiltros
+          busqueda={busqueda}
+          onBusqueda={cambiarBusqueda}
+          placeholderBusqueda="Buscar por descripción…"
+          filtros={[
+            { id: 'filtro-entidad', value: filtroEntidad, onChange: cambiarFiltroEntidad, opciones: OPCIONES_ENTIDAD },
+            { id: 'filtro-accion', value: filtroAccion, onChange: cambiarFiltroAccion, opciones: OPCIONES_ACCION },
+          ]}
+        />
+      </div>
 
       {cargando && <BarraCarga etiqueta="Cargando la auditoría…" />}
 
@@ -125,6 +127,7 @@ export default function AuditoriaPage() {
       )}
 
       {!cargando && registros.length > 0 && (
+        <div data-tour="auditoria-tabla">
         <Tabla
           etiqueta="Auditoría"
           pie={
@@ -177,6 +180,7 @@ export default function AuditoriaPage() {
             ))}
           </tbody>
         </Tabla>
+        </div>
       )}
     </div>
   )

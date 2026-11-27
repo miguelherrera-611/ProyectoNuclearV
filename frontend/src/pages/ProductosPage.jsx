@@ -94,7 +94,7 @@ export default function ProductosPage() {
       {error && <Aviso className="mb-6">{error}</Aviso>}
 
       {puedeCrear && (
-        <Tarjeta className="mb-6 p-4 sm:p-6">
+        <Tarjeta data-tour="productos-crear" className="mb-6 p-4 sm:p-6">
           <h2 className="mb-4 font-display text-lg font-bold">Nuevo producto</h2>
           <form onSubmit={handleCrear} className="grid gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
             <Campo id="codigo" etiqueta="Código">
@@ -118,7 +118,9 @@ export default function ProductosPage() {
       )}
 
       {!cargando && productos.length > 0 && (
-        <BarraFiltros busqueda={busqueda} onBusqueda={setBusqueda} placeholderBusqueda="Buscar por código o nombre…" />
+        <div data-tour="productos-buscador">
+          <BarraFiltros busqueda={busqueda} onBusqueda={setBusqueda} placeholderBusqueda="Buscar por código o nombre…" />
+        </div>
       )}
 
       {!cargando && productos.length > 0 && productosFiltrados.length === 0 && (
@@ -128,7 +130,7 @@ export default function ProductosPage() {
       {!cargando && productosFiltrados.length > 0 && (
         <>
           {/* Celular: una tarjeta por producto. */}
-          <ul className="grid gap-3 md:hidden">
+          <ul data-tour="productos-tabla-movil" className="grid gap-3 md:hidden">
             {pag.slice(productosFiltrados).map((producto) => (
               <li key={producto.id}>
                 <Tarjeta className="p-4">
@@ -161,7 +163,7 @@ export default function ProductosPage() {
           </div>
 
           {/* Tableta y escritorio: tabla. */}
-          <div className="hidden md:block">
+          <div data-tour="productos-tabla-desktop" className="hidden md:block">
             <Tabla etiqueta="Productos" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
               <thead>
                 <tr>

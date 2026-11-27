@@ -133,56 +133,58 @@ export default function PapeleraPage() {
       )}
 
       {!cargando && itemsFiltrados.length > 0 && (
-        <Tabla etiqueta="Papelera" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
-          <thead>
-            <tr>
-              <Th>Tipo</Th>
-              <Th>Descripción</Th>
-              <Th>Eliminado</Th>
-              <Th>Se purga en</Th>
-              {(puedeRestaurar || puedeEliminarPermanente) && <Th>Acciones</Th>}
-            </tr>
-          </thead>
-          <tbody>
-            {pag.slice(itemsFiltrados).map((item) => {
-              const dias = diasRestantes(item.se_purga_en)
-              return (
-                <Fila key={`${item.tipo}-${item.id}`}>
-                  <Td>{NOMBRE_TIPO[item.tipo]}</Td>
-                  <Td className="break-words">{item.descripcion}</Td>
-                  <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(item.eliminado_en)}</Td>
-                  <Td className="whitespace-nowrap">
-                    {dias === 0 ? (
-                      <span className="font-medium text-error">Hoy</span>
-                    ) : (
-                      `${dias} día${dias === 1 ? '' : 's'}`
-                    )}
-                  </Td>
-                  {(puedeRestaurar || puedeEliminarPermanente) && (
-                    <Td>
-                      <div className="flex gap-3">
-                        {puedeRestaurar && (
-                          <Boton variante="exito" className="min-h-0 px-0 py-0" onClick={() => handleRestaurar(item)}>
-                            Restaurar
-                          </Boton>
-                        )}
-                        {puedeEliminarPermanente && (
-                          <Boton
-                            variante="destructivo"
-                            className="min-h-0 px-0 py-0"
-                            onClick={() => pedirEliminarPermanente(item)}
-                          >
-                            Eliminar para siempre
-                          </Boton>
-                        )}
-                      </div>
+        <div data-tour="papelera-tabla">
+          <Tabla etiqueta="Papelera" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
+            <thead>
+              <tr>
+                <Th>Tipo</Th>
+                <Th>Descripción</Th>
+                <Th>Eliminado</Th>
+                <Th>Se purga en</Th>
+                {(puedeRestaurar || puedeEliminarPermanente) && <Th>Acciones</Th>}
+              </tr>
+            </thead>
+            <tbody>
+              {pag.slice(itemsFiltrados).map((item) => {
+                const dias = diasRestantes(item.se_purga_en)
+                return (
+                  <Fila key={`${item.tipo}-${item.id}`}>
+                    <Td>{NOMBRE_TIPO[item.tipo]}</Td>
+                    <Td className="break-words">{item.descripcion}</Td>
+                    <Td className="whitespace-nowrap text-texto-sec">{formatearFecha(item.eliminado_en)}</Td>
+                    <Td className="whitespace-nowrap">
+                      {dias === 0 ? (
+                        <span className="font-medium text-error">Hoy</span>
+                      ) : (
+                        `${dias} día${dias === 1 ? '' : 's'}`
+                      )}
                     </Td>
-                  )}
-                </Fila>
-              )
-            })}
-          </tbody>
-        </Tabla>
+                    {(puedeRestaurar || puedeEliminarPermanente) && (
+                      <Td>
+                        <div className="flex gap-3">
+                          {puedeRestaurar && (
+                            <Boton variante="exito" className="min-h-0 px-0 py-0" onClick={() => handleRestaurar(item)}>
+                              Restaurar
+                            </Boton>
+                          )}
+                          {puedeEliminarPermanente && (
+                            <Boton
+                              variante="destructivo"
+                              className="min-h-0 px-0 py-0"
+                              onClick={() => pedirEliminarPermanente(item)}
+                            >
+                              Eliminar para siempre
+                            </Boton>
+                          )}
+                        </div>
+                      </Td>
+                    )}
+                  </Fila>
+                )
+              })}
+            </tbody>
+          </Tabla>
+        </div>
       )}
 
       {itemAEliminarPermanente && (

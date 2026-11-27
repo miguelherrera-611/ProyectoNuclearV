@@ -21,8 +21,12 @@ export function Titulo({ children, subtitulo, acciones }) {
   )
 }
 
-export function Tarjeta({ children, className = '' }) {
-  return <section className={`rounded-xl border border-borde bg-tarjeta shadow-md ${className}`}>{children}</section>
+export function Tarjeta({ children, className = '', ...props }) {
+  return (
+    <section className={`rounded-xl border border-borde bg-tarjeta shadow-md ${className}`} {...props}>
+      {children}
+    </section>
+  )
 }
 
 // Un solo botón "principal" por pantalla (guía 2.4); el resto, secundario.

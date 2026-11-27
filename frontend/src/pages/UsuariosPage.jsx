@@ -169,7 +169,13 @@ export default function UsuariosPage() {
     <div>
       <Titulo
         subtitulo="Cuentas con acceso al sistema y sus permisos."
-        acciones={puedeCrear && !mostrarFormulario && <Boton onClick={abrirCrear}>Crear cuenta</Boton>}
+        acciones={
+          puedeCrear && !mostrarFormulario && (
+            <Boton data-tour="usuarios-crear" onClick={abrirCrear}>
+              Crear cuenta
+            </Boton>
+          )
+        }
       >
         Usuarios
       </Titulo>
@@ -274,7 +280,7 @@ export default function UsuariosPage() {
       {!cargando && usuariosFiltrados.length > 0 && (
         <>
           {/* Celular: una tarjeta por usuario. */}
-          <ul className="grid gap-3 sm:hidden">
+          <ul data-tour="usuarios-tabla-movil" className="grid gap-3 sm:hidden">
             {pag.slice(usuariosFiltrados).map((u) => (
               <li key={u.id}>
                 <Tarjeta className="p-4">
@@ -304,7 +310,7 @@ export default function UsuariosPage() {
           </div>
 
           {/* Tableta y escritorio: tabla. */}
-          <div className="hidden sm:block">
+          <div data-tour="usuarios-tabla-desktop" className="hidden sm:block">
             <Tabla etiqueta="Usuarios" pie={<Paginador {...pag} onCambiar={pag.setPagina} />}>
               <thead>
                 <tr>

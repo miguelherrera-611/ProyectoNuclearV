@@ -127,7 +127,7 @@ export default function Dashboard() {
             </>
           }
           acciones={
-            <>
+            <div data-tour="inicio-acciones" className="contents">
               <Link
                 to="/pronostico"
                 className="inline-flex min-h-11 items-center justify-center bg-principal px-5 py-2 font-display text-sm font-bold text-sobre-principal hover:bg-principal-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foco"
@@ -137,7 +137,7 @@ export default function Dashboard() {
               <Boton variante="secundario" onClick={imprimirReporte} disabled={cargando || resumen.length === 0}>
                 Exportar reporte
               </Boton>
-            </>
+            </div>
           }
         >
           Panel de pronóstico
@@ -158,7 +158,7 @@ export default function Dashboard() {
 
       {!cargando && resumen.length > 0 && (
         <>
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div data-tour="inicio-resumen" className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Kpi etiqueta="Unidades proyectadas" valor={formatearUnidades(totalProyectado)}>
               <Variacion porcentaje={variacion} sufijo="vs. último mes real" />
             </Kpi>
@@ -170,7 +170,7 @@ export default function Dashboard() {
             </Kpi>
           </div>
 
-          <Tarjeta className="mb-6 p-3 sm:p-6">
+          <Tarjeta data-tour="inicio-grafico" className="mb-6 p-3 sm:p-6">
             <h2 className="mb-1 px-1 font-display text-lg font-bold">Demanda de los últimos {MESES_GRAFICO} meses</h2>
             <p className="mb-4 px-1 text-sm text-texto-sec">Unidades vendidas por mes y producto</p>
             <GraficoLineas
@@ -183,7 +183,7 @@ export default function Dashboard() {
           <h2 className="mb-3 font-display text-lg font-bold">Pronóstico del próximo mes</h2>
 
           {/* Celular: una tarjeta por producto, con las mismas 4 columnas. */}
-          <ul className="grid gap-3 sm:hidden print:hidden">
+          <ul data-tour="inicio-tabla-movil" className="grid gap-3 sm:hidden print:hidden">
             {pag.slice(filasTabla).map((f) => (
               <li key={f.producto.id}>
                 <Tarjeta className="p-4">
@@ -221,7 +221,7 @@ export default function Dashboard() {
             <Paginador {...pag} onCambiar={pag.setPagina} />
           </div>
 
-          <div className="hidden sm:block print:block">
+          <div data-tour="inicio-tabla-desktop" className="hidden sm:block print:block">
             <Tabla
               etiqueta="Pronóstico del próximo mes por producto"
               pie={<Paginador {...pag} onCambiar={pag.setPagina} />}

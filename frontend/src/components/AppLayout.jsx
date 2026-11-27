@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { useTema } from '../tema/TemaContext'
-import { IconoCerrarSesion, IconoChevronAbajo, IconoLuna, IconoMenu, IconoSol } from './Iconos'
+import { useTour } from '../tour/TourContext'
+import { IconoCerrarSesion, IconoChevronAbajo, IconoGuia, IconoLuna, IconoMenu, IconoSol } from './Iconos'
 import Sidebar from './Sidebar'
 import { usePopover } from './usePopover'
 
@@ -34,6 +35,24 @@ function InterruptorTema() {
       <span className={`flex size-7 items-center justify-center rounded-full ${esOscuro ? 'bg-principal text-sobre-principal' : 'text-texto-sec'}`}>
         <IconoLuna className="size-4" />
       </span>
+    </button>
+  )
+}
+
+// Arranca la guía interactiva (components/Tour.jsx) desde cualquier
+// pantalla — un botón siempre visible, en vez de un recorrido forzado al
+// primer ingreso.
+function BotonGuia() {
+  const { iniciar } = useTour()
+  return (
+    <button
+      type="button"
+      onClick={iniciar}
+      aria-label="Ver guía de uso"
+      title="Ver guía de uso"
+      className={`flex size-10 items-center justify-center rounded-full border border-campo text-texto-sec hover:border-texto hover:text-texto ${ESTILO_FOCO}`}
+    >
+      <IconoGuia className="size-5" />
     </button>
   )
 }
@@ -116,6 +135,7 @@ export default function AppLayout({ children }) {
           <span className="font-display text-base font-bold text-texto md:hidden">JR Forecast</span>
 
           <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            <BotonGuia />
             <InterruptorTema />
             <Perfil />
           </div>

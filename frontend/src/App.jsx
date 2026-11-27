@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 import AppLayout from './components/AppLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import Tour from './components/Tour'
 import AuditoriaPage from './pages/AuditoriaPage'
 import Dashboard from './pages/Dashboard'
 import LoginPage from './pages/LoginPage'
@@ -13,6 +14,7 @@ import PronosticoPage from './pages/PronosticoPage'
 import TwoFactorPage from './pages/TwoFactorPage'
 import UsuariosPage from './pages/UsuariosPage'
 import { TemaProvider } from './tema/TemaContext'
+import { TourProvider } from './tour/TourContext'
 
 // Sin sesión: login + 2FA como flujo de 2 pasos simple, sin rutas propias.
 // react-router solo entra una vez autenticado, cuando ya hay varias
@@ -78,9 +80,12 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <AppLayout>
-        <RutasConLimiteDeError />
-      </AppLayout>
+      <TourProvider>
+        <AppLayout>
+          <RutasConLimiteDeError />
+        </AppLayout>
+        <Tour />
+      </TourProvider>
     </BrowserRouter>
   )
 }
