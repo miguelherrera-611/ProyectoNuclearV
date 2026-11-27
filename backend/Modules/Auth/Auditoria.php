@@ -54,4 +54,5 @@ class Auditoria extends Model
             'meta' => $meta,
         ]);
     }
+
 }
