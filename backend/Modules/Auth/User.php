@@ -26,6 +26,9 @@ class User extends Authenticatable
         'role',
         'permisos',
         'avatar_path',
+        // Quién hizo la última mutación — lo lee el trigger de auditoría
+        // (ver database/migrations/..._create_triggers_auditoria_users.php).
+        'actor_id',
     ];
 
     public const ROLE_ADMINISTRADOR = 'administrador';

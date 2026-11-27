@@ -50,19 +50,22 @@ class UsuarioController
         // de ahí en adelante son propios de este usuario (ver Permisos).
         $permisos = Permisos::filtrarValidas($data['permisos'] ?? Permisos::defaultParaRol($data['role']));
 
+        // La foto se resuelve ANTES del create() (no en un update() aparte
+        // después) para que todo quede en un solo INSERT: así el trigger de
+        // auditoría (ver migrations/..._create_triggers_auditoria_users.php)
+        // registra un solo "crear", no un "crear" seguido de un "editar"
+        // falso por la foto.
+        $avatarPath = $request->hasFile('avatar') ? $request->file('avatar')->store('avatars', 'public') : null;
+
         $usuario = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
             'role' => $data['role'],
             'permisos' => $permisos,
+            'avatar_path' => $avatarPath,
+            'actor_id' => $request->user()->id,
         ]);
-
-        if ($request->hasFile('avatar')) {
-            $usuario->update(['avatar_path' => $request->file('avatar')->store('avatars', 'public')]);
-        }
-
-        Auditoria::registrar('crear', 'Usuario', $usuario->id, "Creó al usuario {$usuario->email} ({$usuario->role})");
 
         return response()->json(['data' => new UserResource($usuario)], 201);
     }
@@ -89,6 +92,7 @@ class UsuarioController
             'email' => $data['email'],
             'role' => $data['role'],
             'permisos' => $permisos,
+            'actor_id' => $request->user()->id,
         ]);
 
         if (! empty($data['password'])) {
@@ -103,8 +107,6 @@ class UsuarioController
         }
 
         $usuario->save();
-
-        Auditoria::registrar('editar', 'Usuario', $usuario->id, "Editó al usuario {$usuario->email} ({$usuario->role})");
 
         return response()->json(['data' => new UserResource($usuario)]);
     }
@@ -134,10 +136,11 @@ class UsuarioController
             ], 422);
         }
 
-        Auditoria::registrar('eliminar', 'Usuario', $usuario->id, "Eliminó al usuario {$usuario->email}");
-
         // Revoca cualquier sesión activa de la cuenta eliminada.
         $usuario->tokens()->delete();
+        // Dos sentencias a propósito — ver el comentario igual en
+        // ProductoController::destroy().
+        $usuario->update(['actor_id' => $request->user()->id]);
         $usuario->delete();
 
         return response()->noContent();

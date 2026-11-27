@@ -4,8 +4,10 @@ namespace Modules\Pronosticos;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Modules\Auth\Auditoria;
 
+// Auditoria::registrar() ya no se llama acá — crear/corregir/eliminar queda
+// auditado solo por los triggers de la base de datos sobre "observaciones"
+// (ver database/migrations/..._create_triggers_auditoria_observaciones.php).
 class ObservacionController
 {
     public function index(Request $request)
@@ -41,26 +43,25 @@ class ObservacionController
             ->first();
 
         if ($observacion) {
-            $observacion->update(['cantidad' => $data['cantidad']]);
-            Auditoria::registrar('editar', 'Observacion', $observacion->id, "Corrigió la observación de {$periodo} a {$data['cantidad']}");
+            $observacion->update(['cantidad' => $data['cantidad'], 'actor_id' => $request->user()->id]);
         } else {
             $observacion = Observacion::create([
                 'producto_id' => $data['producto_id'],
                 'periodo' => $periodo,
                 'cantidad' => $data['cantidad'],
+                'actor_id' => $request->user()->id,
             ]);
-            Auditoria::registrar('crear', 'Observacion', $observacion->id, "Capturó la observación de {$periodo} ({$data['cantidad']})");
         }
 
         return response()->json(['data' => $observacion], 201);
     }
 
     // Soft delete: queda restaurable desde la papelera
-    // (Modules\Auth\PapeleraController).
-    public function destroy(Observacion $observacion)
+    // (Modules\Auth\PapeleraController). Dos sentencias a propósito — ver
+    // el comentario igual en ProductoController::destroy().
+    public function destroy(Request $request, Observacion $observacion)
     {
-        Auditoria::registrar('eliminar', 'Observacion', $observacion->id, "Eliminó la observación de {$observacion->periodo->toDateString()}");
-
+        $observacion->update(['actor_id' => $request->user()->id]);
         $observacion->delete();
 
         return response()->noContent();

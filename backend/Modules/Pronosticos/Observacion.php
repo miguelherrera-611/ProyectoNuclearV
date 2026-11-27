@@ -19,6 +19,9 @@ class Observacion extends Model
         'producto_id',
         'periodo',
         'cantidad',
+        // Quién hizo la última mutación — lo lee el trigger de auditoría
+        // (ver database/migrations/..._create_triggers_auditoria_observaciones.php).
+        'actor_id',
     ];
 
     protected function casts(): array

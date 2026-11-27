@@ -15,6 +15,10 @@ class Producto extends Model
     protected $fillable = [
         'codigo',
         'nombre',
+        // Quién hizo la última mutación — lo lee el trigger de auditoría
+        // (ver database/migrations/..._create_triggers_auditoria_productos.php),
+        // no es un dato del negocio.
+        'actor_id',
     ];
 
     // Misma razón que en Modules\Auth\User: la resolución automática de

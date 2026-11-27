@@ -43,14 +43,16 @@ class PapeleraController
         return response()->json(['data' => $items]);
     }
 
-    public function restaurar(string $tipo, int $id): JsonResponse
+    // "restaurar" lo audita el trigger de la tabla correspondiente (ver
+    // database/migrations/..._create_triggers_auditoria_*.php) — acá solo se
+    // deja escrito "actor_id" antes del restore() real, igual que en los
+    // demás controladores (ver ProductoController::destroy()).
+    public function restaurar(Request $request, string $tipo, int $id): JsonResponse
     {
         $registro = $this->buscarEnPapelera($tipo, $id);
 
-        $descripcion = self::describir($tipo, $registro);
+        $registro->update(['actor_id' => $request->user()->id]);
         $registro->restore();
-
-        Auditoria::registrar('restaurar', self::entidadDe($tipo), $id, "Restauró: {$descripcion}");
 
         return response()->json(['data' => ['tipo' => $tipo, 'id' => $id]]);
     }

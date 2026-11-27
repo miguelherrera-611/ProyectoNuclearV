@@ -4,7 +4,6 @@ namespace Modules\Pronosticos;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Modules\Auth\Auditoria;
 use Modules\Productos\Producto;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -148,28 +147,32 @@ class ImportacionObservacionesController
 
         $creados = 0;
         $corregidos = 0;
+        $actorId = $request->user()->id;
 
-        DB::transaction(function () use ($filasValidas, $producto, &$creados, &$corregidos) {
+        // Cada fila queda auditada por separado por el trigger de
+        // "observaciones" (crear o corregir, según toque) — ya no hay un
+        // solo resumen consolidado como antes; a cambio, cada mes importado
+        // queda su propio registro en Auditoría, igual de detallado que si
+        // se hubiera capturado a mano uno por uno.
+        DB::transaction(function () use ($filasValidas, $producto, $actorId, &$creados, &$corregidos) {
             foreach ($filasValidas as $f) {
                 $periodo = sprintf('%04d-%02d-01', $f['anio'], $f['mes']);
                 $observacion = Observacion::where('producto_id', $producto->id)->whereDate('periodo', $periodo)->first();
 
                 if ($observacion) {
-                    $observacion->update(['cantidad' => $f['cantidad']]);
+                    $observacion->update(['cantidad' => $f['cantidad'], 'actor_id' => $actorId]);
                     $corregidos++;
                 } else {
-                    Observacion::create(['producto_id' => $producto->id, 'periodo' => $periodo, 'cantidad' => $f['cantidad']]);
+                    Observacion::create([
+                        'producto_id' => $producto->id,
+                        'periodo' => $periodo,
+                        'cantidad' => $f['cantidad'],
+                        'actor_id' => $actorId,
+                    ]);
                     $creados++;
                 }
             }
         });
-
-        Auditoria::registrar(
-            'crear',
-            'Observacion',
-            $producto->id,
-            "Importó datos históricos de {$producto->nombre} desde Excel: {$creados} meses nuevos, {$corregidos} corregidos.",
-        );
 
         return response()->json(['data' => ['creados' => $creados, 'corregidos' => $corregidos, 'total' => $creados + $corregidos]]);
     }
